@@ -29,6 +29,6 @@ container: all
 # push: 
 #	docker -- push $(REGISTRY)/$(TARGET)
 #
-# TODO: Determine tagging
+# TODO: Determine tagging mechanics
 
 .PHONY: all local container
