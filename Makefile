@@ -12,19 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: This needs to be done in order for us to test this properly
-#REGISTRY?=TBD
-#PROJECT?=TBD
+TARGET = eventrouter
+REGISTRY ?= gcr.io/heptio
+IMAGE = $(REGISTRY)/$(BIN)
+BUILD_IMAGE ?= golang:1.7
+DIR := ${CURDIR}
 
-all: local
+all: local container
+	
+local: 
+	docker run --rm -v $(DIR):/go/src/github.com/heptio/eventrouter -w /go/src/github.com/heptio/eventrouter $(BUILD_IMAGE) go build -v
 
-local:
-	go build 
+container: all
+	docker build -t $(TARGET) .
 
-container: sysproc
-	sudo docker build -t "eventrouter:dockerfile" .
-
-#push: 
-#	docker -- push $(REGISTRY)/$(PROJECT)/$(TARGET)
+# push: 
+#	docker -- push $(REGISTRY)/$(TARGET)
+#
+# TODO: Determine tagging
 
 .PHONY: all local container

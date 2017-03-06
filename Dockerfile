@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO - have a build distro machine. 
-FROM fedora:latest
+FROM alpine:3.4
 MAINTAINER Timothy St. Clair "tstclair@heptio.com"  
 
-#TODO: RUN dnf update 
+RUN apk update --no-cache && apk add ca-certificates
 COPY eventrouter /eventrouter 
 
-#TODO mount in config file and set defaults to parse /etc/$NAME
+USER nobody:nobody
 ENTRYPOINT ["/eventrouter"]
 
