@@ -20,6 +20,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -50,15 +52,22 @@ func sigHandler() <-chan struct{} {
 }
 
 func main() {
-	// TODO: update kubeconfig to use internal version
-	// will need RBAC'd config
-	kubeconfig := flag.String("kubeconfig", "/var/run/kubernetes/admin.kubeconfig", "absolute path to the kubeconfig file")
+	var wg sync.WaitGroup
+	var config *rest.Config
+	var err error
+
+	kubeconfig := flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	//local-cluster default = /var/run/kubernetes/admin.kubeconfig
 	rsInterval := flag.Duration("resync-interval", time.Minute*30, "default resync interval")
 	// TODO: see EventAppender
 	flag.Parse()
 
-	// uses the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	// set kube client config
+	if len(*kubeconfig) > 0 {
+		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	} else {
+		config, err = rest.InClusterConfig()
+	}
 	if err != nil {
 		panic(err.Error())
 	}
@@ -75,13 +84,20 @@ func main() {
 
 	// create a new event router
 	// TODO: Do locking for HA, b/c this is super important
+	// xref: https://github.com/kubernetes/kubernetes/pull/42666
 	// probably a closure to select on stop or os.Signal
 	eventRouter := NewEventRouter(clientset, eventsInformer)
 	stop := sigHandler()
-	glog.Infof("Starting Event Router")
-	go eventRouter.Run(stop)
-	glog.Infof("Starting Informer(s)")
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		eventRouter.Run(stop)
+	}()
+
+	// Startup the informers
+	glog.Infof("Starting shared Informer(s)")
 	sharedInformers.Start(stop)
-	<-stop
+	wg.Wait()
 	glog.Warningf("Exiting main()")
 }

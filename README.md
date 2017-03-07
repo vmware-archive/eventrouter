@@ -19,7 +19,7 @@ Non-goals:
 _sink_
 * This service does not serve as a storage layer, that is also the responsibility of the _sink_
 
-[kubernetes] https://github.com/kubernetes/kubernetes/ "Kubernetes"
-
 ## Configuring A Sink 
 TODO 
+
+[kubernetes] https://github.com/kubernetes/kubernetes/ "Kubernetes"

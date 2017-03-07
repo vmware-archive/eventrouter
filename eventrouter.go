@@ -84,10 +84,6 @@ func (er *EventRouter) Run(stopCh <-chan struct{}) {
 		utilruntime.HandleError(fmt.Errorf("timed out waiting for caches to sync"))
 		return
 	}
-
-	//TODO: Determine if we need resync+workers, still TBD
-
-	// termination signal raised
 	<-stopCh
 }
 

@@ -23,7 +23,7 @@ all: local container
 local: 
 	docker run --rm -v $(DIR):/go/src/github.com/heptio/eventrouter -w /go/src/github.com/heptio/eventrouter $(BUILD_IMAGE) go build -v
 
-container: all
+container:
 	docker build -t $(TARGET) .
 
 # push: 

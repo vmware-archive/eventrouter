@@ -16,8 +16,8 @@ FROM alpine:3.4
 MAINTAINER Timothy St. Clair "tstclair@heptio.com"  
 
 RUN apk update --no-cache && apk add ca-certificates
-COPY eventrouter /eventrouter 
-
+ADD eventrouter /eventrouter 
 USER nobody:nobody
+
 ENTRYPOINT ["/eventrouter"]
 
