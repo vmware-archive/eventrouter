@@ -36,4 +36,5 @@ container:
 
 clean: 
 	rm -f eventrouter
-#	docker rmi $(TARGET)
+	docker rmi $(REGISTRY)/$(TARGET):latest
+	docker rmi $(REGISTRY)/$(TARGET):$(VERSION)

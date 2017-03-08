@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: kube-eventrouter
-          image: gcr.io/heptio-images/eventrouter:latest
+          image: gcr.io/heptio-images/eventrouter:v0.1
           imagePullPolicy: IfNotPresent
           volumeMounts:
           - name: config-volume

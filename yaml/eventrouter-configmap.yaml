@@ -16,11 +16,7 @@ apiVersion: v1
 data:
   config.json: |- 
     {
-      "Appenders": [
-        { "Logging": "Defaults to leverage your EFK" },
-        { "DB-Push": "does nothing yet" },
-        { "Kafka": "does nothing yet" }
-      ]
+      "sink": "glog"
     }
 kind: ConfigMap
 metadata:

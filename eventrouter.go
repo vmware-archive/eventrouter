@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	"github.com/heptio/eventrouter/sinks"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -28,14 +29,6 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
-
-// EventAppender is what allows us to shunt to other systems
-// Eventually there could be multiple
-type EventAppender struct {
-	// TODO: We will eventually have APPENDERS
-	// Default = s3 mount w/ log appending
-	// e.g. Kafka, ES, etc.
-}
 
 // EventRouter is responsible for maintaining a stream of kubernetes
 // system Events and pushing them to another channel for storage
@@ -49,18 +42,16 @@ type EventRouter struct {
 	// returns true if the event store has been synced
 	eListerSynched cache.InformerSynced
 
-	// Controllers that need to be synced
-	//queue workqueue.RateLimitingInterface
-
-	// TODO add an appender
-	// eAppender EventAppender
+	// event sink
+	// TODO: Determine if we want to support multiple sinks.
+	eSink sinks.EventSinkInterface
 }
 
 // NewEventRouter will create a new event router using the input params
 func NewEventRouter(kubeClient kubernetes.Interface, eventsInformer coreinformers.EventInformer) *EventRouter {
 	er := &EventRouter{
 		kubeClient: kubeClient,
-		//queue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "events"),
+		eSink:      sinks.ManufactureSink(),
 	}
 	eventsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    er.addEvent,
@@ -72,7 +63,7 @@ func NewEventRouter(kubeClient kubernetes.Interface, eventsInformer coreinformer
 	return er
 }
 
-// Starts the EventRouter/Controller.
+// Run starts the EventRouter/Controller.
 func (er *EventRouter) Run(stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 	defer glog.Infof("Shutting down EventRouter")
@@ -90,23 +81,20 @@ func (er *EventRouter) Run(stopCh <-chan struct{}) {
 // addEvent is called ehen an event is created, or during the initial list
 func (er *EventRouter) addEvent(obj interface{}) {
 	e := obj.(*v1.Event)
-	// TODO json serialize data
-	glog.Infof("Event Added to the system:\n%v", e)
+	er.eSink.UpdateEvents(e, nil)
 }
 
 // updateEvent is called any time there is an update to an existing event
 func (er *EventRouter) updateEvent(objOld interface{}, objNew interface{}) {
 	eOld := objOld.(*v1.Event)
 	eNew := objNew.(*v1.Event)
-	// TODO json serialize data
-	glog.Infof("Event Updated from the system FROM:\n%v\nTO:%v", eOld, eNew)
-	// NOTES: Surprising # of updates show up on Backoff image pulls.
+	er.eSink.UpdateEvents(eNew, eOld)
 }
 
 // deleteEvent should only occur when the system garbage collects events via TTL expiration
 func (er *EventRouter) deleteEvent(obj interface{}) {
 	e := obj.(*v1.Event)
-	// TODO json serialize data
-	glog.Infof("Event Deleted from the system:\n%v", e)
-	// NOTES: This should *only* happen on TTL expiration
+	// NOTE: This should *only* happen on TTL expiration there
+	// is no reason to push this to a sink
+	glog.V(5).Infof("Event Deleted from the system:\n%v", e)
 }

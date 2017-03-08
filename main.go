@@ -52,6 +52,7 @@ func sigHandler() <-chan struct{} {
 	return stop
 }
 
+// loadConfig will parse input + config file and return a clientset
 func loadConfig() kubernetes.Interface {
 	var config *rest.Config
 	var err error
@@ -65,8 +66,8 @@ func loadConfig() kubernetes.Interface {
 	viper.AddConfigPath("/etc/eventrouter/")
 	viper.AddConfigPath(".")
 	viper.SetDefault("kubeconfig", "")
+	viper.SetDefault("sink", "glog")
 	viper.SetDefault("resync-interval", time.Minute*30)
-
 	if err = viper.ReadInConfig(); err != nil {
 		panic(err.Error())
 	}
@@ -87,7 +88,6 @@ func loadConfig() kubernetes.Interface {
 	if err != nil {
 		panic(err.Error())
 	}
-
 	return clientset
 }
 
@@ -99,17 +99,18 @@ func main() {
 	sharedInformers := informers.NewSharedInformerFactory(clientset, viper.GetDuration("resync-interval"))
 	eventsInformer := sharedInformers.Core().V1().Events()
 
-	// TODO: Do locking for HA https://github.com/kubernetes/kubernetes/pull/42666
+	// TODO: Support locking for HA https://github.com/kubernetes/kubernetes/pull/42666
 	eventRouter := NewEventRouter(clientset, eventsInformer)
 	stop := sigHandler()
 
+	// Startup the EventRouter
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		eventRouter.Run(stop)
 	}()
 
-	// Startup the informers
+	// Startup the Informer(s)
 	glog.Infof("Starting shared Informer(s)")
 	sharedInformers.Start(stop)
 	wg.Wait()
