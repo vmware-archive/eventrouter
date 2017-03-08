@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine:3.4
+#FROM alpine:3.4
+FROM golang:1.7
 MAINTAINER Timothy St. Clair "tstclair@heptio.com"  
 
-ENV LOGLVL 3
-RUN apk update --no-cache && apk add ca-certificates
+#RUN apk update --no-cache && apk add ca-certificates
 ADD eventrouter /eventrouter 
-USER nobody:nobody
+#USER nobody:nobody
 
-CMD ["/eventrouter", "-logtostderr", "-v $LOGLVL"]
+CMD ["/bin/sh", "-c", "/eventrouter -v 3 -logtostderr"]
 

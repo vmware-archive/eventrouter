@@ -12,30 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: v1
-data:
-  # TODO Here is where you add configuration 
-  # for router appenders 
-  config.json: |- 
-    {
-      "Appenders": [
-        { "Logging": "sink" },
-        { "Kafka": "endpoint-details"},
-        { "ElasticSearch": "endpoint-details"}
-      ]
-    }
-kind: ConfigMap
-metadata:
-  name: eventrouter-cm
-  namespace: kube-system
-
----
-
-## Here is the default deployment 
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: eventrouter
+  namespace: kube-system
 spec:
   # TODO - Set to 2 when ConfigMap locking is merged ~1.7
   # https://github.com/kubernetes/kubernetes/pull/42666
@@ -49,17 +30,15 @@ spec:
       containers:
         - name: kube-eventrouter
           # TODO I need a canonical location that we will serve from
-          image: eventrouter
-          env:
-          - name : LOGLVL
-            value: 3
+          image: eventrouter:latest
+          imagePullPolicy: Never
+          command: [ "/bin/sh", "-c", "/eventrouter -v 3 -logtostderr" ]
           volumeMounts:
           - name: config-volume
             mountPath: /etc/eventrouter
-      # TODO - livenessProbe: 
       volumes: 
         - name: config-volume
-        configMap:
-          name: eventrouter-cm
+          configMap:
+            name: eventrouter-cm
   
  

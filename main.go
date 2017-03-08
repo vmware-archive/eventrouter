@@ -110,4 +110,5 @@ func main() {
 	sharedInformers.Start(stop)
 	wg.Wait()
 	glog.Warningf("Exiting main()")
+	os.Exit(1)
 }

@@ -12,26 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-TARGET = eventrouter
-REGISTRY ?= gcr.io/heptio
-IMAGE = $(REGISTRY)/$(BIN)
-BUILD_IMAGE ?= golang:1.7
-DIR := ${CURDIR}
-
-all: local container
-	
-local: 
-	docker run --rm -v $(DIR):/go/src/github.com/heptio/eventrouter -w /go/src/github.com/heptio/eventrouter $(BUILD_IMAGE) go build -v
-
-container:
-	docker build -t $(TARGET) .
-
-# push: 
-#	docker -- push $(REGISTRY)/$(TARGET)
-#
-# TODO: Determine tagging mechanics
-
-.PHONY: all local container
-
-clean: 
-	docker rmi $(TARGET)
+apiVersion: v1
+data:
+  config.json: |- 
+    {
+      "Appenders": [
+        { "Logging": "sink" },
+        { "Kafka": "endpoint-details"},
+        { "ElasticSearch": "endpoint-details"}
+      ]
+    }
+kind: ConfigMap
+metadata:
+  name: eventrouter-cm
+  namespace: kube-system
