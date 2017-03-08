@@ -29,10 +29,8 @@ spec:
     spec:
       containers:
         - name: kube-eventrouter
-          # TODO I need a canonical location that we will serve from
-          image: eventrouter:latest
-          imagePullPolicy: Never
-          command: [ "/bin/sh", "-c", "/eventrouter -v 3 -logtostderr" ]
+          image: gcr.io/heptio-images/eventrouter:latest
+          imagePullPolicy: IfNotPresent
           volumeMounts:
           - name: config-volume
             mountPath: /etc/eventrouter

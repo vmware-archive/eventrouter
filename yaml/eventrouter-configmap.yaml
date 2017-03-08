@@ -17,9 +17,9 @@ data:
   config.json: |- 
     {
       "Appenders": [
-        { "Logging": "sink" },
-        { "Kafka": "endpoint-details"},
-        { "ElasticSearch": "endpoint-details"}
+        { "Logging": "Defaults to leverage your EFK" },
+        { "DB-Push": "does nothing yet" },
+        { "Kafka": "does nothing yet" }
       ]
     }
 kind: ConfigMap

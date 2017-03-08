@@ -52,12 +52,12 @@ func sigHandler() <-chan struct{} {
 	return stop
 }
 
-func main() {
-	var wg sync.WaitGroup
+func loadConfig() kubernetes.Interface {
 	var config *rest.Config
 	var err error
 
 	flag.Parse()
+
 	// leverages a file|(ConfigMap)
 	// to be located at /etc/eventrouter/config
 	viper.SetConfigType("json")
@@ -71,8 +71,8 @@ func main() {
 		panic(err.Error())
 	}
 
+	// allows for running both in & out of cluster
 	kubeconfig := viper.GetString("kubeconfig")
-	// set kube client config
 	if len(kubeconfig) > 0 {
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	} else {
@@ -88,14 +88,18 @@ func main() {
 		panic(err.Error())
 	}
 
-	// initialize the shared informers
+	return clientset
+}
+
+// main entry point of the program
+func main() {
+	var wg sync.WaitGroup
+
+	clientset := loadConfig()
 	sharedInformers := informers.NewSharedInformerFactory(clientset, viper.GetDuration("resync-interval"))
 	eventsInformer := sharedInformers.Core().V1().Events()
 
-	// create a new event router
-	// TODO: Do locking for HA, b/c this is super important
-	// xref: https://github.com/kubernetes/kubernetes/pull/42666
-	// probably a closure to select on stop or os.Signal
+	// TODO: Do locking for HA https://github.com/kubernetes/kubernetes/pull/42666
 	eventRouter := NewEventRouter(clientset, eventsInformer)
 	stop := sigHandler()
 
