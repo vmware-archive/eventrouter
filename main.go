@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/spf13/viper"
 
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -56,15 +57,24 @@ func main() {
 	var config *rest.Config
 	var err error
 
-	kubeconfig := flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	//local-cluster default = /var/run/kubernetes/admin.kubeconfig
-	rsInterval := flag.Duration("resync-interval", time.Minute*30, "default resync interval")
-	// TODO: see EventAppender
 	flag.Parse()
+	// leverages a file|(ConfigMap)
+	// to be located at /etc/eventrouter/config
+	viper.SetConfigType("json")
+	viper.SetConfigName("config")
+	viper.AddConfigPath("/etc/eventrouter/")
+	viper.AddConfigPath(".")
+	viper.SetDefault("kubeconfig", "")
+	viper.SetDefault("resync-interval", time.Minute*30)
 
+	if err = viper.ReadInConfig(); err != nil {
+		panic(err.Error())
+	}
+
+	kubeconfig := viper.GetString("kubeconfig")
 	// set kube client config
-	if len(*kubeconfig) > 0 {
-		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if len(kubeconfig) > 0 {
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	} else {
 		config, err = rest.InClusterConfig()
 	}
@@ -79,7 +89,7 @@ func main() {
 	}
 
 	// initialize the shared informers
-	sharedInformers := informers.NewSharedInformerFactory(clientset, *rsInterval)
+	sharedInformers := informers.NewSharedInformerFactory(clientset, viper.GetDuration("resync-interval"))
 	eventsInformer := sharedInformers.Core().V1().Events()
 
 	// create a new event router

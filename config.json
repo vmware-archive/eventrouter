@@ -1,0 +1,8 @@
+{
+"kubeconfig": "/var/run/kubernetes/admin.kubeconfig",
+"Appenders": [
+	{ "Logging": "sink" },
+        { "Kafka": "endpoint-details"},
+        { "ElasticSearch": "endpoint-details"}
+      ]
+}

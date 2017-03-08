@@ -12,26 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NOTE: THIS IS STILL A TODO, cleaning it up
-
-## The following is the configuration input arguments that are used 
 apiVersion: v1
+data:
+  # TODO Here is where you add configuration 
+  # for router appenders 
+  config.json: |- 
+    {
+      "Appenders": [
+        { "Logging": "sink" },
+        { "Kafka": "endpoint-details"},
+        { "ElasticSearch": "endpoint-details"}
+      ]
+    }
 kind: ConfigMap
 metadata:
-  name: eventrouter-config
-  namespace: default
-data:
-  # TODO 
-  example.property.1: hello
-  example.property.2: world
-  example.property.file: |-
-    property.1=value-1
-    property.2=value-2
-    property.3=value-3
+  name: eventrouter-cm
+  namespace: kube-system
 
 ---
 
-## 
+## Here is the default deployment 
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -43,11 +43,23 @@ spec:
   template:
     metadata:
       labels:
-        app: eventrouter
+        component: eventrouter
+        tier: control-plane-addons
     spec:
       containers:
-      - name: eventrouter
-        # TODO I need a canonical location that we will serve from
-        image: eventrouter:0.1.0
-        
---- 
+        - name: kube-eventrouter
+          # TODO I need a canonical location that we will serve from
+          image: eventrouter
+          env:
+          - name : LOGLVL
+            value: 3
+          volumeMounts:
+          - name: config-volume
+            mountPath: /etc/eventrouter
+      # TODO - livenessProbe: 
+      volumes: 
+        - name: config-volume
+        configMap:
+          name: eventrouter-cm
+  
+ 

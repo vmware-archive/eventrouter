@@ -15,9 +15,10 @@
 FROM alpine:3.4
 MAINTAINER Timothy St. Clair "tstclair@heptio.com"  
 
+ENV LOGLVL 3
 RUN apk update --no-cache && apk add ca-certificates
 ADD eventrouter /eventrouter 
 USER nobody:nobody
 
-ENTRYPOINT ["/eventrouter"]
+CMD ["/eventrouter", "-logtostderr", "-v $LOGLVL"]
 
