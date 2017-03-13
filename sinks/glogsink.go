@@ -17,6 +17,8 @@ limitations under the License.
 package sinks
 
 import (
+	"encoding/json"
+
 	"github.com/golang/glog"
 	"k8s.io/client-go/pkg/api/v1"
 )
@@ -24,7 +26,7 @@ import (
 // GlogSink is the most basic sink
 // Useful when you already have EFK Stack
 type GlogSink struct {
-	// TODO: maybe create a channel here?
+	// TODO: create a channel and buffer for scaling
 }
 
 // NewGlogSink will create a new
@@ -34,9 +36,19 @@ func NewGlogSink() EventSinkInterface {
 
 // UpdateEvents implements the EventSinkInterface
 func (gs *GlogSink) UpdateEvents(eNew *v1.Event, eOld *v1.Event) {
-	if eOld != nil {
-		glog.Infof("Event Updated from the system FROM:\n%v\nTO:%v", eOld, eNew)
+	nEvent, err := json.Marshal(eNew)
+	if err != nil {
+		glog.Warningf("Failed to json serialize new element:\n%v", eNew)
 	} else {
-		glog.Infof("Event Added to the system:\n%v", eNew)
+		if eOld != nil {
+			oEvent, err := json.Marshal(eOld)
+			if err != nil {
+				glog.Warningf("Failed to json serialize old element:\n%v", eOld)
+			} else {
+				glog.Infof("Event UPDATED in the system FROM:\n%v\nTO:%v", string(oEvent), string(nEvent))
+			}
+		} else {
+			glog.Infof("Event ADDED to the system:\n%v", string(nEvent))
+		}
 	}
 }
