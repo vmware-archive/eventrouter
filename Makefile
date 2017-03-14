@@ -17,15 +17,16 @@ REGISTRY ?= gcr.io/heptio-images
 VERSION ?= v0.1
 IMAGE = $(REGISTRY)/$(BIN)
 BUILD_IMAGE ?= golang:1.7-alpine
+DOCKER ?= docker
 DIR := ${CURDIR}
 
 all: local container
 	
 local: 
-	docker run --rm -v $(DIR):/go/src/github.com/heptio/eventrouter -w /go/src/github.com/heptio/eventrouter $(BUILD_IMAGE) go build -v
+	$(DOCKER) run --rm -v $(DIR):/go/src/github.com/heptio/eventrouter -w /go/src/github.com/heptio/eventrouter $(BUILD_IMAGE) go build -v
 
 container:
-	docker build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
+	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
 # push: 
 #	docker -- push $(REGISTRY)/$(TARGET)
@@ -36,5 +37,5 @@ container:
 
 clean: 
 	rm -f eventrouter
-	docker rmi $(REGISTRY)/$(TARGET):latest
-	docker rmi $(REGISTRY)/$(TARGET):$(VERSION)
+	$(DOCKER) rmi $(REGISTRY)/$(TARGET):latest
+	$(DOCKER) rmi $(REGISTRY)/$(TARGET):$(VERSION)
