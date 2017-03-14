@@ -38,6 +38,8 @@ func ManufactureSink() (e EventSinkInterface) {
 	switch s {
 	case "glog":
 		e = NewGlogSink()
+	case "json":
+		e = NewJSONSink()
 	// case "kafka"
 	// case "logfile"
 	default:
