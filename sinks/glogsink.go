@@ -24,7 +24,7 @@ import (
 )
 
 // GlogSink is the most basic sink
-// Useful when you already have EFK Stack
+// Useful when you already have ELK/EFK Stack
 type GlogSink struct {
 	// TODO: create a channel and buffer for scaling
 }
@@ -36,19 +36,22 @@ func NewGlogSink() EventSinkInterface {
 
 // UpdateEvents implements the EventSinkInterface
 func (gs *GlogSink) UpdateEvents(eNew *v1.Event, eOld *v1.Event) {
-	nEvent, err := json.Marshal(eNew)
-	if err != nil {
-		glog.Warningf("Failed to json serialize new element:\n%v", eNew)
-	} else {
-		if eOld != nil {
-			oEvent, err := json.Marshal(eOld)
-			if err != nil {
-				glog.Warningf("Failed to json serialize old element:\n%v", eOld)
-			} else {
-				glog.Infof("Event UPDATED in the system FROM:\n%v\nTO:%v", string(oEvent), string(nEvent))
-			}
-		} else {
-			glog.Infof("Event ADDED to the system:\n%v", string(nEvent))
+	var eJSON map[string]interface{}
+	if eOld == nil {
+		eJSON = map[string]interface{}{
+			"verb":  "ADDED",
+			"event": eNew,
 		}
+	} else {
+		eJSON = map[string]interface{}{
+			"verb":      "UPDATED",
+			"event":     eNew,
+			"old_event": eOld,
+		}
+	}
+	if eJSONBytes, err := json.Marshal(eJSON); err == nil {
+		glog.Info(string(eJSONBytes))
+	} else {
+		glog.Warningf("Failed to json serialize event: %v", err)
 	}
 }
