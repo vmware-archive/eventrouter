@@ -13,6 +13,7 @@
 # limitations under the License.
 
 TARGET = eventrouter
+BUILDMNT = /go/src/github.com/heptio/$(TARGET)
 REGISTRY ?= gcr.io/heptio-images
 VERSION ?= v0.1
 IMAGE = $(REGISTRY)/$(BIN)
@@ -23,19 +24,18 @@ DIR := ${CURDIR}
 all: local container
 	
 local: 
-	$(DOCKER) run --rm -v $(DIR):/go/src/github.com/heptio/eventrouter -w /go/src/github.com/heptio/eventrouter $(BUILD_IMAGE) go build -v
+	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) go build -v
 
 container:
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
-# push: 
-#	docker -- push $(REGISTRY)/$(TARGET)
-#
 # TODO: Determine tagging mechanics
+push: 
+	docker -- push $(REGISTRY)/$(TARGET)
 
-.PHONY: all local container
+.PHONY: all local container push
 
 clean: 
-	rm -f eventrouter
+	rm -f $(TARGET)
 	$(DOCKER) rmi $(REGISTRY)/$(TARGET):latest
 	$(DOCKER) rmi $(REGISTRY)/$(TARGET):$(VERSION)
