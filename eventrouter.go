@@ -21,6 +21,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/heptio/eventrouter/sinks"
+	"github.com/prometheus/client_golang/prometheus"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -29,6 +30,40 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
+
+var (
+	kubernetesWarningEventCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "heptio",
+		Subsystem: "eventrouter",
+		Name:      "warning",
+		Help:      "This is a counter for kubernetes warning events in a cluster",
+	}, []string{
+		"cluster-name",
+		"involved-object-kind",
+		"involved-object-name",
+		"involved-object-namespace",
+		"reason",
+		"source",
+	})
+	kubernetesNormalEventCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "heptio",
+		Subsystem: "eventrouter",
+		Name:      "normal",
+		Help:      "This is a counter for kubernetes normal events in a cluster",
+	}, []string{
+		"cluster-name",
+		"involved-object-kind",
+		"involved-object-name",
+		"involved-object-namespace",
+		"reason",
+		"source",
+	})
+)
+
+func init() {
+	prometheus.MustRegister(kubernetesWarningEventCounterVec)
+	prometheus.MustRegister(kubernetesNormalEventCounterVec)
+}
 
 // EventRouter is responsible for maintaining a stream of kubernetes
 // system Events and pushing them to another channel for storage
@@ -78,9 +113,38 @@ func (er *EventRouter) Run(stopCh <-chan struct{}) {
 	<-stopCh
 }
 
-// addEvent is called ehen an event is created, or during the initial list
+// addEvent is called when an event is created, or during the initial list
 func (er *EventRouter) addEvent(obj interface{}) {
 	e := obj.(*v1.Event)
+	var counter prometheus.Counter
+	var err error
+
+	if e.Type == "Normal" {
+		counter, err = kubernetesNormalEventCounterVec.GetMetricWithLabelValues(
+			e.GetObjectMeta().GetClusterName(),
+			e.InvolvedObject.GetObjectKind().GroupVersionKind().String(),
+			e.InvolvedObject.Name,
+			e.InvolvedObject.Namespace,
+			e.Reason,
+			e.Source.Host,
+		)
+	} else if e.Type == "Warning" {
+		counter, err = kubernetesWarningEventCounterVec.GetMetricWithLabelValues(
+			e.GetObjectMeta().GetClusterName(),
+			e.InvolvedObject.GetObjectKind().GroupVersionKind().String(),
+			e.InvolvedObject.Name,
+			e.InvolvedObject.Namespace,
+			e.Reason,
+			e.Source.Host,
+		)
+	}
+
+	if err != nil {
+		glog.Error(err)
+	} else {
+		counter.Add(1)
+	}
+
 	er.eSink.UpdateEvents(e, nil)
 }
 
