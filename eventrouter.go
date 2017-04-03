@@ -36,12 +36,11 @@ var (
 		Namespace: "heptio",
 		Subsystem: "eventrouter",
 		Name:      "warning",
-		Help:      "This is a counter for kubernetes warning events in a cluster",
+		Help:      "Total number of warning events in the kubernetes cluster",
 	}, []string{
-		"cluster-name",
-		"involved-object-kind",
-		"involved-object-name",
-		"involved-object-namespace",
+		"involved_object_kind",
+		"involved_object_name",
+		"involved_object_namespace",
 		"reason",
 		"source",
 	})
@@ -49,12 +48,11 @@ var (
 		Namespace: "heptio",
 		Subsystem: "eventrouter",
 		Name:      "normal",
-		Help:      "This is a counter for kubernetes normal events in a cluster",
+		Help:      "Total number of normal events in the kubernetes cluster",
 	}, []string{
-		"cluster-name",
-		"involved-object-kind",
-		"involved-object-name",
-		"involved-object-namespace",
+		"involved_object_kind",
+		"involved_object_name",
+		"involved_object_namespace",
 		"reason",
 		"source",
 	})
@@ -116,35 +114,7 @@ func (er *EventRouter) Run(stopCh <-chan struct{}) {
 // addEvent is called when an event is created, or during the initial list
 func (er *EventRouter) addEvent(obj interface{}) {
 	e := obj.(*v1.Event)
-	var counter prometheus.Counter
-	var err error
-
-	if e.Type == "Normal" {
-		counter, err = kubernetesNormalEventCounterVec.GetMetricWithLabelValues(
-			e.GetObjectMeta().GetClusterName(),
-			e.InvolvedObject.GetObjectKind().GroupVersionKind().String(),
-			e.InvolvedObject.Name,
-			e.InvolvedObject.Namespace,
-			e.Reason,
-			e.Source.Host,
-		)
-	} else if e.Type == "Warning" {
-		counter, err = kubernetesWarningEventCounterVec.GetMetricWithLabelValues(
-			e.GetObjectMeta().GetClusterName(),
-			e.InvolvedObject.GetObjectKind().GroupVersionKind().String(),
-			e.InvolvedObject.Name,
-			e.InvolvedObject.Namespace,
-			e.Reason,
-			e.Source.Host,
-		)
-	}
-
-	if err != nil {
-		glog.Error(err)
-	} else {
-		counter.Add(1)
-	}
-
+	prometheusEvent(e)
 	er.eSink.UpdateEvents(e, nil)
 }
 
@@ -152,7 +122,39 @@ func (er *EventRouter) addEvent(obj interface{}) {
 func (er *EventRouter) updateEvent(objOld interface{}, objNew interface{}) {
 	eOld := objOld.(*v1.Event)
 	eNew := objNew.(*v1.Event)
+	prometheusEvent(eNew)
 	er.eSink.UpdateEvents(eNew, eOld)
+}
+
+// prometheusEvent is called when an event is added or updated
+func prometheusEvent(event *v1.Event) {
+	var counter prometheus.Counter
+	var err error
+
+	if event.Type == "Normal" {
+		counter, err = kubernetesNormalEventCounterVec.GetMetricWithLabelValues(
+			event.InvolvedObject.Kind,
+			event.InvolvedObject.Name,
+			event.InvolvedObject.Namespace,
+			event.Reason,
+			event.Source.Host,
+		)
+	} else if event.Type == "Warning" {
+		counter, err = kubernetesWarningEventCounterVec.GetMetricWithLabelValues(
+			event.InvolvedObject.Kind,
+			event.InvolvedObject.Name,
+			event.InvolvedObject.Namespace,
+			event.Reason,
+			event.Source.Host,
+		)
+	}
+
+	if err != nil {
+		// Not sure this is the right place to log this error?
+		glog.Error(err)
+	} else {
+		counter.Add(1)
+	}
 }
 
 // deleteEvent should only occur when the system garbage collects events via TTL expiration

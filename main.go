@@ -111,6 +111,7 @@ func main() {
 
 	// Startup the http listener for Prometheus Metrics endpoint.
 	go func() {
+		log.Println("Starting prometheus metrics.")
 		http.Handle("/metrics", promhttp.Handler())
 		log.Print(http.ListenAndServe(*addr, nil))
 	}()
