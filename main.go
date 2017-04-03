@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -25,6 +26,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 
 	"k8s.io/client-go/informers"
@@ -32,6 +34,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+// addr tells us what address to have the Prometheus metrics listen on.
+var addr = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
 
 // setup a signal hander to gracefully exit
 func sigHandler() <-chan struct{} {
@@ -102,6 +107,13 @@ func main() {
 	// TODO: Support locking for HA https://github.com/kubernetes/kubernetes/pull/42666
 	eventRouter := NewEventRouter(clientset, eventsInformer)
 	stop := sigHandler()
+
+	// Startup the http listener for Prometheus Metrics endpoint.
+	go func() {
+		glog.Info("Starting prometheus metrics.")
+		http.Handle("/metrics", promhttp.Handler())
+		glog.Warning(http.ListenAndServe(*addr, nil))
+	}()
 
 	// Startup the EventRouter
 	wg.Add(1)
