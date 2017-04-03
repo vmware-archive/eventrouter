@@ -18,7 +18,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -111,9 +110,9 @@ func main() {
 
 	// Startup the http listener for Prometheus Metrics endpoint.
 	go func() {
-		log.Println("Starting prometheus metrics.")
+		glog.Info("Starting prometheus metrics.")
 		http.Handle("/metrics", promhttp.Handler())
-		log.Print(http.ListenAndServe(*addr, nil))
+		glog.Warning(http.ListenAndServe(*addr, nil))
 	}()
 
 	// Startup the EventRouter

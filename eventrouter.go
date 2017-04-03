@@ -151,7 +151,7 @@ func prometheusEvent(event *v1.Event) {
 
 	if err != nil {
 		// Not sure this is the right place to log this error?
-		glog.Error(err)
+		glog.Warning(err)
 	} else {
 		counter.Add(1)
 	}
