@@ -22,20 +22,20 @@ DOCKER ?= docker
 DIR := ${CURDIR}
 
 all: local container
-	
-local: 
+
+local:
 	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) go build -v
 
 container:
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
 # TODO: Determine tagging mechanics
-push: 
+push:
 	docker -- push $(REGISTRY)/$(TARGET)
 
 .PHONY: all local container push
 
-clean: 
+clean:
 	rm -f $(TARGET)
 	$(DOCKER) rmi $(REGISTRY)/$(TARGET):latest
 	$(DOCKER) rmi $(REGISTRY)/$(TARGET):$(VERSION)

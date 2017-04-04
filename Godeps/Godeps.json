@@ -1,7 +1,7 @@
 {
 	"ImportPath": "github.com/heptio/eventrouter",
 	"GoVersion": "go1.7",
-	"GodepVersion": "v79",
+	"GodepVersion": "v75",
 	"Packages": [
 		"./..."
 	],
@@ -14,6 +14,10 @@
 		{
 			"ImportPath": "github.com/PuerkitoBio/urlesc",
 			"Rev": "5bd2802263f21d8788851d5305584c82a5c75d7e"
+		},
+		{
+			"ImportPath": "github.com/beorn7/perks/quantile",
+			"Rev": "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
@@ -82,6 +86,10 @@
 		{
 			"ImportPath": "github.com/golang/glog",
 			"Rev": "44145f04b68cf362d9c4df2182967c2275eaefed"
+		},
+		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "98fa357170587e470c5f27d3c3ea0947b71eb455"
 		},
 		{
 			"ImportPath": "github.com/google/gofuzz",
@@ -158,6 +166,11 @@
 			"Rev": "d5b7844b561a7bc640052f1b935f7b800330d7e0"
 		},
 		{
+			"ImportPath": "github.com/matttproud/golang_protobuf_extensions/pbutil",
+			"Comment": "v1.0.0-2-gc12348c",
+			"Rev": "c12348ce28de40eed0136aa2b644d0ee0650e56c"
+		},
+		{
 			"ImportPath": "github.com/mitchellh/mapstructure",
 			"Rev": "53818660ed4955e899c0bcafa97299a388bd7c8e"
 		},
@@ -178,6 +191,37 @@
 		{
 			"ImportPath": "github.com/pkg/sftp",
 			"Rev": "4d0e916071f68db74f8a73926335f809396d6b42"
+		},
+		{
+			"ImportPath": "github.com/prometheus/client_golang/prometheus",
+			"Comment": "v0.8.0-11-g134be0b",
+			"Rev": "134be0b97877dd62a2970c5d79731d5e97ee6b9d"
+		},
+		{
+			"ImportPath": "github.com/prometheus/client_golang/prometheus/promhttp",
+			"Comment": "v0.8.0-11-g134be0b",
+			"Rev": "134be0b97877dd62a2970c5d79731d5e97ee6b9d"
+		},
+		{
+			"ImportPath": "github.com/prometheus/client_model/go",
+			"Comment": "model-0.0.2-12-gfa8ad6f",
+			"Rev": "fa8ad6fec33561be4280a8f0514318c79d7f6cb6"
+		},
+		{
+			"ImportPath": "github.com/prometheus/common/expfmt",
+			"Rev": "85637ea67b04b5c3bb25e671dacded2977f8f9f6"
+		},
+		{
+			"ImportPath": "github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg",
+			"Rev": "85637ea67b04b5c3bb25e671dacded2977f8f9f6"
+		},
+		{
+			"ImportPath": "github.com/prometheus/common/model",
+			"Rev": "85637ea67b04b5c3bb25e671dacded2977f8f9f6"
+		},
+		{
+			"ImportPath": "github.com/prometheus/procfs",
+			"Rev": "abf152e5f3e97f2fafac028d2cc06c1feb87ffa5"
 		},
 		{
 			"ImportPath": "github.com/spf13/afero",
