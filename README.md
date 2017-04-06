@@ -12,7 +12,11 @@ This project has several objectives, which include:
 * It should be relatively low overhead
 * Support for multiple _sinks_ should be configurable
 
-Non-goals: 
+### NOTE:
+
+By default, eventrouter is configured to leverage existing EFK stacks by outputting wrapped json object which are easy to index in elastic search. 
+
+## Non-Goals: 
 
 * This service does not provide a querable extension, that is a responsibility of the 
 _sink_
