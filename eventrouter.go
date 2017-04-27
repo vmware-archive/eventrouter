@@ -33,9 +33,7 @@ import (
 
 var (
 	kubernetesWarningEventCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "heptio",
-		Subsystem: "eventrouter",
-		Name:      "warning",
+		Namespace: "heptio_eventrouter_warnings_total",
 		Help:      "Total number of warning events in the kubernetes cluster",
 	}, []string{
 		"involved_object_kind",
@@ -45,9 +43,7 @@ var (
 		"source",
 	})
 	kubernetesNormalEventCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "heptio",
-		Subsystem: "eventrouter",
-		Name:      "normal",
+		Namespace: "heptio_eventrouter_normal_total",
 		Help:      "Total number of normal events in the kubernetes cluster",
 	}, []string{
 		"involved_object_kind",
