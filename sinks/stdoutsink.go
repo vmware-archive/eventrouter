@@ -28,32 +28,21 @@ import (
 // By default, Fluentd/ElasticSearch won't index glog formatted lines
 // By logging raw JSON to stdout, we will get automated indexing which
 // can be queried in Kibana.
-
 type StdoutSink struct {
 	// TODO: create a channel and buffer for scaling
 }
 
-// NewStdoutSink will create a new
+// NewStdoutSink will create a new StdoutSink with default options, returned as
+// an EventSinkInterface
 func NewStdoutSink() EventSinkInterface {
 	return &StdoutSink{}
 }
 
 // UpdateEvents implements the EventSinkInterface
 func (gs *StdoutSink) UpdateEvents(eNew *v1.Event, eOld *v1.Event) {
-	var eJSON map[string]interface{}
-	if eOld == nil {
-		eJSON = map[string]interface{}{
-			"verb":  "ADDED",
-			"event": eNew,
-		}
-	} else {
-		eJSON = map[string]interface{}{
-			"verb":      "UPDATED",
-			"event":     eNew,
-			"old_event": eOld,
-		}
-	}
-	if eJSONBytes, err := json.Marshal(eJSON); err == nil {
+	eData := NewEventData(eNew, eOld)
+
+	if eJSONBytes, err := json.Marshal(eData); err == nil {
 		fmt.Println(string(eJSONBytes))
 	} else {
 		fmt.Fprintf(os.Stderr, "Failed to json serialize event: %v", err)

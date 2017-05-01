@@ -40,6 +40,23 @@ func ManufactureSink() (e EventSinkInterface) {
 		e = NewGlogSink()
 	case "stdout":
 		e = NewStdoutSink()
+	case "http":
+		url := viper.GetString("httpSinkUrl")
+		if url == "" {
+			panic("http sync specified but no httpSinkUrl")
+		}
+
+		// By default we buffer up to 1500 events, and drop messages if more than
+		// 1500 have come in without getting consumed
+		viper.SetDefault("httpSinkBufferSize", 1500)
+		viper.SetDefault("httpSinkDiscardMessages", true)
+
+		bufferSize := viper.GetInt("httpSinkBufferSize")
+		overflow := viper.GetBool("httpSinkDiscardMessages")
+
+		h := NewHTTPSink(url, overflow, bufferSize)
+		go h.Run(make(chan bool))
+		return h
 	// case "kafka"
 	// case "logfile"
 	default:
