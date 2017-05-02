@@ -25,7 +25,10 @@ import (
 )
 
 // StdoutSink is the other basic sink
-// Useful when you already have ELK/EFK Stack that indexes JSON
+// By default, Fluentd/ElasticSearch won't index glog formatted lines
+// By logging raw JSON to stdout, we will get automated indexing which
+// can be queried in Kibana.
+
 type StdoutSink struct {
 	// TODO: create a channel and buffer for scaling
 }
