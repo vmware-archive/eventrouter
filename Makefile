@@ -33,6 +33,9 @@ container:
 push:
 	docker -- push $(REGISTRY)/$(TARGET)
 
+test:
+	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) /bin/sh -c 'go test $$(go list ./... | grep -v /vendor/)'
+
 .PHONY: all local container push
 
 clean:

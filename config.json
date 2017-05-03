@@ -1,4 +1,7 @@
 {
 "kubeconfig": "/var/run/kubernetes/admin.kubeconfig",
-"sink": "glog"
+"sink": "glog",
+"httpSinkUrl": "http://localhost:8080",
+"httpSinkBufferSize": 1500,
+"httpSinkDiscardMessages": true
 }

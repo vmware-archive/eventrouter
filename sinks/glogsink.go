@@ -36,20 +36,9 @@ func NewGlogSink() EventSinkInterface {
 
 // UpdateEvents implements the EventSinkInterface
 func (gs *GlogSink) UpdateEvents(eNew *v1.Event, eOld *v1.Event) {
-	var eJSON map[string]interface{}
-	if eOld == nil {
-		eJSON = map[string]interface{}{
-			"verb":  "ADDED",
-			"event": eNew,
-		}
-	} else {
-		eJSON = map[string]interface{}{
-			"verb":      "UPDATED",
-			"event":     eNew,
-			"old_event": eOld,
-		}
-	}
-	if eJSONBytes, err := json.Marshal(eJSON); err == nil {
+	eData := NewEventData(eNew, eOld)
+
+	if eJSONBytes, err := json.Marshal(eData); err == nil {
 		glog.Info(string(eJSONBytes))
 	} else {
 		glog.Warningf("Failed to json serialize event: %v", err)

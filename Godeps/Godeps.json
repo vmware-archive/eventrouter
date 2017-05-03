@@ -2,9 +2,6 @@
 	"ImportPath": "github.com/heptio/eventrouter",
 	"GoVersion": "go1.7",
 	"GodepVersion": "v79",
-	"Packages": [
-		"./..."
-	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/PuerkitoBio/purell",
@@ -20,6 +17,10 @@
 			"Rev": "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
 		},
 		{
+			"ImportPath": "github.com/crewjam/rfc5424",
+			"Rev": "6ae4b209c3f0d5071494be6b883a1970acadda94"
+		},
+		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
 		},
@@ -32,6 +33,16 @@
 			"ImportPath": "github.com/docker/distribution/reference",
 			"Comment": "v2.4.0-rc.1-38-gcd27f17",
 			"Rev": "cd27f179f2c10c5d300e6d09025b538c475b0d51"
+		},
+		{
+			"ImportPath": "github.com/eapache/channels",
+			"Comment": "v1.1.0",
+			"Rev": "47238d5aae8c0fefd518ef2bee46290909cf8263"
+		},
+		{
+			"ImportPath": "github.com/eapache/queue",
+			"Comment": "v1.0.2-7-g44cc805",
+			"Rev": "44cc805cf13205b55f69e14bcb69867d1ae92f98"
 		},
 		{
 			"ImportPath": "github.com/emicklei/go-restful",
@@ -222,6 +233,10 @@
 		{
 			"ImportPath": "github.com/prometheus/procfs",
 			"Rev": "abf152e5f3e97f2fafac028d2cc06c1feb87ffa5"
+		},
+		{
+			"ImportPath": "github.com/sethgrid/pester",
+			"Rev": "4f4c0a67b6496764028e1ab9fd8dfb630282ed2f"
 		},
 		{
 			"ImportPath": "github.com/spf13/afero",

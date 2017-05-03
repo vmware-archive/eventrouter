@@ -77,7 +77,12 @@ func loadConfig() kubernetes.Interface {
 		panic(err.Error())
 	}
 
-	// allows for running both in & out of cluster
+	viper.BindEnv("kubeconfig") // Allows the KUBECONFIG env var to override where the kubeconfig is
+
+	// Allow specifying a custom config file via the EVENTROUTER_CONFIG env var
+	if forceCfg := os.Getenv("EVENTROUTER_CONFIG"); forceCfg != "" {
+		viper.SetConfigFile(forceCfg)
+	}
 	kubeconfig := viper.GetString("kubeconfig")
 	if len(kubeconfig) > 0 {
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
