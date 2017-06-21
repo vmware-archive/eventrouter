@@ -1,0 +1,37 @@
+version: "2"
+
+services:
+  app:
+    image: golang:1.6.1-alpine
+    volumes:
+      - ../../:/go/src/github.com/heptio/eventrouter
+    working_dir: /go/src/github.com/heptio/eventrouter
+    command: ["go", "run", "tests/kafka/main.go"]
+    links:
+      - kafka
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC: eventrouter
+      KAFKA_RETRYMAX: 5
+      KAFKA_ASYNC: "true"
+    depends_on:
+      - "kafka"
+
+  kafka:
+    image: spotify/kafka
+    hostname: kafka
+    environment:
+      ADVERTISED_HOST: kafka
+      ADVERTISED_PORT: 9092
+
+  consumer:
+    image: spotify/kafka
+    links:
+      - kafka
+    command: [
+      "/opt/kafka_2.11-0.10.1.0/bin/kafka-console-consumer.sh",
+      "--bootstrap-server", "kafka:9092",
+      "--topic", "eventrouter"
+    ]
+    depends_on:
+      - "kafka"
