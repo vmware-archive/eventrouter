@@ -13,7 +13,8 @@
 # limitations under the License.
 
 TARGET = eventrouter
-BUILDMNT = /go/src/github.com/openshift/$(TARGET)
+GOTARGET = github.com/openshift/$(TARGET)
+BUILDMNT = /go/src/$(GOTARGET)
 REGISTRY ?= gcr.io/heptio-images
 VERSION ?= v0.2
 IMAGE = $(REGISTRY)/$(BIN)
