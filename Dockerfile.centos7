@@ -1,4 +1,4 @@
-FROM rhel7:7-released
+FROM centos:centos7 
 
 LABEL maintainer="OpenShift Development <dev@lists.openshift.redhat.com>" \
       com.redhat.component="openshift-eventrouter-docker" \
@@ -6,10 +6,18 @@ LABEL maintainer="OpenShift Development <dev@lists.openshift.redhat.com>" \
       version="v3.7.0" \
       architecture=x86_64
 
-RUN yum-config-manager --enable rhel-7-server-ose-3.7-rpms && \
-    yum install -y openshift-eventrouter && \
-    yum clean all
+ENV GOPATH=/go
+
+RUN yum -y install golang git
+
+WORKDIR /go
+
+RUN go get github.com/openshift/eventrouter
+
+WORKDIR /go/src/github.com/openshift/eventrouter
+
+RUN go build
 
 USER nobody
 
-CMD ["/bin/sh", "-c", "/usr/bin/eventrouter -v 3 -logtostderr"]
+CMD ["/bin/sh", "-c", "/go/bin/eventrouter -v 3 -logtostderr"]
