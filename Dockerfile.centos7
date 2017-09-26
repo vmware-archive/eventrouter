@@ -6,6 +6,10 @@ LABEL maintainer="OpenShift Development <dev@lists.openshift.redhat.com>" \
       version="v3.7.0" \
       architecture=x86_64
 
+USER root
+
+RUN mkdir /go
+
 ENV GOPATH=/go
 
 RUN yum -y install golang git
