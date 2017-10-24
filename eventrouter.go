@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/heptio/eventrouter/sinks"
+	"github.com/heptiolabs/eventrouter/sinks"
 	"github.com/prometheus/client_golang/prometheus"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"

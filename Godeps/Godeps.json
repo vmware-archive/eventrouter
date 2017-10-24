@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/heptio/eventrouter",
+	"ImportPath": "github.com/heptiolabs/eventrouter",
 	"GoVersion": "go1.7",
 	"GodepVersion": "v79",
 	"Deps": [
