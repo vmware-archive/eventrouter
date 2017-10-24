@@ -28,7 +28,7 @@ You can build and test either as a standalone go application or as a Docker cont
 
 ### Standalone:
 ```
-$ go get github.com/heptio/eventrouter
+$ go get github.com/heptiolabs/eventrouter
 ```  
 
 ### Containerized: 
