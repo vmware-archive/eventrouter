@@ -14,7 +14,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+
 	m := new(rfc5424.Message)
+	discardBuf := make([]byte, 1)
 	for {
 		_, err := m.ReadFrom(r.Body)
 		if err == io.EOF {
@@ -23,6 +25,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			log.Fatalf("Parsing rfc5424 message failed: %+v", err)
 		}
 		log.Printf("%s", m.Message)
+
+		// read the extraneous \n at the end of the message and discard
+		_, _ = io.ReadFull(r.Body, discardBuf)
 	}
 }
 
