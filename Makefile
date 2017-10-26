@@ -13,7 +13,7 @@
 # limitations under the License.
 
 TARGET = eventrouter
-BUILDMNT = /go/src/github.com/heptio/$(TARGET)
+BUILDMNT = /go/src/github.com/heptiolabs/$(TARGET)
 REGISTRY ?= gcr.io/heptio-images
 VERSION ?= v0.1
 IMAGE = $(REGISTRY)/$(BIN)
