@@ -34,10 +34,8 @@ spec:
           volumeMounts:
           - name: config-volume
             mountPath: /etc/eventrouter
-      serviceAccount: eventrouter 
-      volumes: 
+      serviceAccount: eventrouter
+      volumes:
         - name: config-volume
           configMap:
             name: eventrouter-cm
-  
- 
