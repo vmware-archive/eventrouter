@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"github.com/Shopify/sarama"
 	"github.com/golang/glog"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/api/core/v1"
 )
 
 // KafkaSink implements the EventSinkInterface
