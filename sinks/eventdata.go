@@ -22,7 +22,7 @@ import (
 	"io"
 
 	"github.com/crewjam/rfc5424"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // EventData encodes an eventrouter event and previous event, with a verb for
