@@ -24,7 +24,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/sethgrid/pester"
 
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 /*

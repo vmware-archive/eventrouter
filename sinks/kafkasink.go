@@ -18,9 +18,9 @@ package sinks
 
 import (
 	"encoding/json"
-	"github.com/golang/glog"
 	"github.com/Shopify/sarama"
-	"k8s.io/client-go/pkg/api/v1"
+	"github.com/golang/glog"
+	"k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // KafkaSink implements the EventSinkInterface

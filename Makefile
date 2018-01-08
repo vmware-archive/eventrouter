@@ -15,9 +15,9 @@
 TARGET = eventrouter
 BUILDMNT = /go/src/github.com/heptiolabs/$(TARGET)
 REGISTRY ?= gcr.io/heptio-images
-VERSION ?= v0.1
+VERSION ?= v0.2
 IMAGE = $(REGISTRY)/$(BIN)
-BUILD_IMAGE ?= golang:1.7-alpine
+BUILD_IMAGE ?= gcr.io/heptio-images/golang:1.9-alpine3.6
 DOCKER ?= docker
 DIR := ${CURDIR}
 
