@@ -22,7 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/api/core/v1"
 )
 
 // EventSinkInterface is the interface used to shunt events

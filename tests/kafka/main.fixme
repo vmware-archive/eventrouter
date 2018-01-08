@@ -23,8 +23,8 @@ import (
 	"github.com/heptio/eventrouter/sinks"
 	"github.com/kelseyhightower/envconfig"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/api/core/v1"
 )
 
 type KafkaEnv struct {
@@ -59,7 +59,7 @@ func main() {
 		Spec: v1.PodSpec{},
 	}
 
-	podRef, err := v1.GetReference(api.Scheme, testPod)
+	podRef, err := v1.GetReference(runtime.Scheme, testPod)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func main() {
 	var oldData, newData *v1.Event
 
 	for k, v := range kvs {
-		newData = newMockEvent(podRef, api.EventTypeWarning, k, v)
+		newData = newMockEvent(podRef, v1.EventTypeWarning, k, v)
 		kSink.UpdateEvents(newData, oldData)
 		oldData = newData
 		time.Sleep(time.Second)
