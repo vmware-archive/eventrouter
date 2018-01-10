@@ -22,38 +22,14 @@ By default, eventrouter is configured to leverage existing EFK stacks by outputt
 _sink_
 * This service does not serve as a storage layer, that is also the responsibility of the _sink_
 
-## Building 
-
-You can build and test either as a standalone go application or as a Docker container.
-
-### Standalone:
-```
-$ go get github.com/heptiolabs/eventrouter
-```  
-
-### Containerized: 
-```
-$ sudo make all 
-```
-
-## Configure and Execute
-
-
-### Standalone:
-Assuming your testing on a local cluster, it will use the local `config.json`, which 
-you can override.
-```
-$ ./eventrouter -v 3 -logtostderr 
-```
-
-### On the cluster 
+## Running Eventrouter 
 Standup: 
 ```
-$ kubectl create -f yaml/
+$ kubectl create -f https://raw.githubusercontent.com/heptiolabs/eventrouter/master/yaml/eventrouter.yaml
 ```
 Teardown: 
 ```
-$ kubectl delete -f yaml/
+$ kubectl delete -f https://raw.githubusercontent.com/heptiolabs/eventrouter/master/yaml/eventrouter.yaml
 ```
 
 [kubernetes]: https://github.com/kubernetes/kubernetes/ "Kubernetes"
