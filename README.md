@@ -32,4 +32,11 @@ Teardown:
 $ kubectl delete -f https://raw.githubusercontent.com/heptiolabs/eventrouter/master/yaml/eventrouter.yaml
 ```
 
+### Inspecting the output 
+```
+$ kubectl logs -f deployment/eventrouter -n kube-system 
+``` 
+
+Watch events roll through the system and hopefully stream into your ES cluster for mining, Hooray!
+
 [kubernetes]: https://github.com/kubernetes/kubernetes/ "Kubernetes"
