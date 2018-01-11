@@ -21,21 +21,30 @@ BUILD_IMAGE ?= gcr.io/heptio-images/golang:1.9-alpine3.6
 DOCKER ?= docker
 DIR := ${CURDIR}
 
+ifneq ($(VERBOSE),)
+VERBOSE_FLAG = -v
+endif
+TESTARGS ?= $(VERBOSE_FLAG) -timeout 60s
+TEST_PKGS ?= $(GOTARGET)/sinks/...
+TEST = go test $(TEST_PKGS) $(TESTARGS)
+
+DOCKER_BUILD ?= $(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) /bin/sh -c
+
 all: container
 
 container:
-	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) go build
+	$(DOCKER_BUILD) 'go build'
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
 push:
 	$(DOCKER) push $(REGISTRY)/$(TARGET):latest
 	if git describe --tags --exact-match >/dev/null 2>&1; \
 	then \
-		$(DOCKER) push $(REGISTRY)/$(TARGET):$(VERSION) \
+		$(DOCKER) push $(REGISTRY)/$(TARGET):$(VERSION); \
 	fi
 
 test:
-	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) /bin/sh -c 'go test $$(go list ./... | grep -v /vendor/)'
+	$(DOCKER_BUILD) '$(TEST)'
 
 .PHONY: all local container push
 
