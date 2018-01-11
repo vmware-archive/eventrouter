@@ -31,7 +31,11 @@ container:
 
 # TODO: Determine tagging mechanics
 push:
-	docker -- push $(REGISTRY)/$(TARGET)
+	$(DOCKER) push $(REGISTRY)/$(TARGET):latest
+	if git describe --tags --exact-match >/dev/null 2>&1; \
+	then \
+		$(DOCKER) push $(REGISTRY)/$(TARGET):$(VERSION)
+	fi
 
 test:
 	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) /bin/sh -c 'go test $$(go list ./... | grep -v /vendor/)'
