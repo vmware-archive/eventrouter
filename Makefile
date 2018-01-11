@@ -21,20 +21,17 @@ BUILD_IMAGE ?= gcr.io/heptio-images/golang:1.9-alpine3.6
 DOCKER ?= docker
 DIR := ${CURDIR}
 
-all: local container
-
-local:
-	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) go build 
+all: container
 
 container:
+	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) go build
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
-# TODO: Determine tagging mechanics
 push:
 	$(DOCKER) push $(REGISTRY)/$(TARGET):latest
 	if git describe --tags --exact-match >/dev/null 2>&1; \
 	then \
-		$(DOCKER) push $(REGISTRY)/$(TARGET):$(VERSION)
+		$(DOCKER) push $(REGISTRY)/$(TARGET):$(VERSION) \
 	fi
 
 test:
