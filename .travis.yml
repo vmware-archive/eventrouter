@@ -4,4 +4,4 @@ services:
   - docker
 install: true
 
-script: make container
+script: make container test vet

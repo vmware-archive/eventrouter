@@ -28,6 +28,8 @@ endif
 TESTARGS ?= $(VERBOSE_FLAG) -timeout 60s
 TEST_PKGS ?= $(GOTARGET)/sinks/...
 TEST = go test $(TEST_PKGS) $(TESTARGS)
+VET_PKGS ?= $(GOTARGET)/...
+VET = go vet $(VET_PKGS)
 
 DOCKER_BUILD ?= $(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) /bin/sh -c
 
@@ -46,6 +48,9 @@ push:
 
 test:
 	$(DOCKER_BUILD) '$(TEST)'
+
+vet:
+	$(DOCKER_BUILD) '$(VET)'
 
 .PHONY: all local container push
 
