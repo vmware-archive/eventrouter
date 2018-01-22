@@ -118,6 +118,12 @@ func (er *EventRouter) addEvent(obj interface{}) {
 func (er *EventRouter) updateEvent(objOld interface{}, objNew interface{}) {
 	eOld := objOld.(*v1.Event)
 	eNew := objNew.(*v1.Event)
+	if eOld.ResourceVersion == eNew.ResourceVersion {
+		// This is just a syncInterval update and the event should have already
+		// been processed, so drop it.
+		return
+	}
+
 	prometheusEvent(eNew)
 	er.eSink.UpdateEvents(eNew, eOld)
 }
