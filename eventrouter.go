@@ -20,8 +20,10 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/heptiolabs/eventrouter/sinks"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/heptiolabs/eventrouter/filter"
+	"github.com/heptiolabs/eventrouter/sinks"
 
 	"k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -74,13 +76,17 @@ type EventRouter struct {
 	// event sink
 	// TODO: Determine if we want to support multiple sinks.
 	eSink sinks.EventSinkInterface
+
+	// includeFilter is an include filter that specifies which events to include
+	includeFilter filter.EventIncludeFilter
 }
 
 // NewEventRouter will create a new event router using the input params
-func NewEventRouter(kubeClient kubernetes.Interface, eventsInformer coreinformers.EventInformer) *EventRouter {
+func NewEventRouter(kubeClient kubernetes.Interface, eventsInformer coreinformers.EventInformer, includeFilter filter.EventIncludeFilter) *EventRouter {
 	er := &EventRouter{
-		kubeClient: kubeClient,
-		eSink:      sinks.ManufactureSink(),
+		kubeClient:    kubeClient,
+		eSink:         sinks.ManufactureSink(),
+		includeFilter: includeFilter,
 	}
 	eventsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    er.addEvent,
@@ -97,7 +103,7 @@ func (er *EventRouter) Run(stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 	defer glog.Infof("Shutting down EventRouter")
 
-	glog.Infof("Starting EvenRouter")
+	glog.Infof("Starting EventRouter")
 
 	// here is where we kick the caches into gear
 	if !cache.WaitForCacheSync(stopCh, er.eListerSynched) {
@@ -110,16 +116,20 @@ func (er *EventRouter) Run(stopCh <-chan struct{}) {
 // addEvent is called when an event is created, or during the initial list
 func (er *EventRouter) addEvent(obj interface{}) {
 	e := obj.(*v1.Event)
-	prometheusEvent(e)
-	er.eSink.UpdateEvents(e, nil)
+	if er.includeFilter.Passes(e) {
+		prometheusEvent(e)
+		er.eSink.UpdateEvents(e, nil)
+	}
 }
 
 // updateEvent is called any time there is an update to an existing event
 func (er *EventRouter) updateEvent(objOld interface{}, objNew interface{}) {
 	eOld := objOld.(*v1.Event)
 	eNew := objNew.(*v1.Event)
-	prometheusEvent(eNew)
-	er.eSink.UpdateEvents(eNew, eOld)
+	if er.includeFilter.Passes(eNew) {
+		prometheusEvent(eNew)
+		er.eSink.UpdateEvents(eNew, eOld)
+	}
 }
 
 // prometheusEvent is called when an event is added or updated
@@ -158,5 +168,7 @@ func (er *EventRouter) deleteEvent(obj interface{}) {
 	e := obj.(*v1.Event)
 	// NOTE: This should *only* happen on TTL expiration there
 	// is no reason to push this to a sink
-	glog.V(5).Infof("Event Deleted from the system:\n%v", e)
+	if er.includeFilter.Passes(e) {
+		glog.V(5).Infof("Event Deleted from the system:\n%v", e)
+	}
 }

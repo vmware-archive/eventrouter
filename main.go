@@ -29,6 +29,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 
+	"github.com/heptiolabs/eventrouter/filter"
+
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -109,8 +111,15 @@ func main() {
 	sharedInformers := informers.NewSharedInformerFactory(clientset, viper.GetDuration("resync-interval"))
 	eventsInformer := sharedInformers.Core().V1().Events()
 
+	includeFilter := filter.EventIncludeFilter{}
+	if err := viper.UnmarshalKey("filter", &includeFilter); err != nil {
+		glog.Warningf("Invalid filter provided, will not filter: %s", err.Error())
+		// Make sure filter is empty
+		includeFilter = filter.EventIncludeFilter{}
+	}
+
 	// TODO: Support locking for HA https://github.com/kubernetes/kubernetes/pull/42666
-	eventRouter := NewEventRouter(clientset, eventsInformer)
+	eventRouter := NewEventRouter(clientset, eventsInformer, includeFilter)
 	stop := sigHandler()
 
 	// Startup the http listener for Prometheus Metrics endpoint.
