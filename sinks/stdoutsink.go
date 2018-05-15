@@ -38,17 +38,16 @@ type StdoutSink struct {
 // an EventSinkInterface
 func NewStdoutSink(namespace string) EventSinkInterface {
 	return &StdoutSink{
-		namespace: namespace
-	}
+		namespace: namespace}
 }
 
 // UpdateEvents implements the EventSinkInterface
 func (gs *StdoutSink) UpdateEvents(eNew *v1.Event, eOld *v1.Event) {
 	eData := NewEventData(eNew, eOld)
 	
-	if len(namespace) > 0 {
+	if len(gs.namespace) > 0 {
 		namespacedData := map[string]interface{}{}
-		namespacedData[namespace] = eData
+		namespacedData[gs.namespace] = eData
 		if eJSONBytes, err := json.Marshal(namespacedData); err == nil {
 			fmt.Println(string(eJSONBytes))
 		} else {

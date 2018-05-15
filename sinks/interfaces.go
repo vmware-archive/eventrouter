@@ -40,7 +40,7 @@ func ManufactureSink() (e EventSinkInterface) {
 		e = NewGlogSink()
 	case "stdout":
 		viper.SetDefault("stdoutJSONNamespace", "")
-		stdoutNamespace = viper.GetString("stdoutJSONNamespace")
+		stdoutNamespace := viper.GetString("stdoutJSONNamespace")
 		e = NewStdoutSink(stdoutNamespace)
 	case "http":
 		url := viper.GetString("httpSinkUrl")
