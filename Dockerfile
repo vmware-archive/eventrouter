@@ -1,7 +1,9 @@
 FROM rhel7:7-released
 
+ENV container=oci
+
 LABEL maintainer="OpenShift Development <dev@lists.openshift.redhat.com>" \
-      com.redhat.component="openshift-eventrouter-docker" \
+      com.redhat.component="openshift-eventrouter-container" \
       name="openshift3/eventrouter" \
       version="v3.7.0" \
       architecture=x86_64
