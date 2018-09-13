@@ -22,7 +22,11 @@ import (
 	"io"
 
 	"github.com/crewjam/rfc5424"
+	"github.com/json-iterator/go"
+	"github.com/json-iterator/go/extra"
 	"k8s.io/api/core/v1"
+
+	"github.com/nytlabs/gojsonexplode"
 )
 
 // EventData encodes an eventrouter event and previous event, with a verb for
@@ -79,4 +83,25 @@ func (e *EventData) WriteRFC5424(w io.Writer) (int64, error) {
 	}
 
 	return msg.WriteTo(w)
+}
+
+// WriteFlattenedJSON writes the json to the file in the below format
+// 1) Flattens the json into a not nested key:value
+// 2) Convert the json into snake format
+// Eg: {"event_involved_object_kind":"pod", "event_metadata_namespace":"kube-system"}
+func (e *EventData) WriteFlattenedJSON(w io.Writer) (int64, error) {
+	var eJSONBytes []byte
+	var err error
+	extra.SetNamingStrategy(extra.LowerCaseWithUnderscores)
+	if eJSONBytes, err = jsoniter.Marshal(e); err != nil {
+		return 0, fmt.Errorf("failed to json serialize event: %v", err)
+	}
+
+	result, err := gojsonexplode.Explodejsonstr(string(eJSONBytes), "_")
+	if err != nil {
+		return 0, fmt.Errorf("failed to flatten json: %v", err)
+	}
+
+	written, err := w.Write([]byte(result))
+	return int64(written), err
 }

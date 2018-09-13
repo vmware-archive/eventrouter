@@ -3,5 +3,14 @@
 "sink": "glog",
 "httpSinkUrl": "http://localhost:8080",
 "httpSinkBufferSize": 1500,
-"httpSinkDiscardMessages": true
+"httpSinkDiscardMessages": true,
+"s3SinkAccessKeyID": "",
+"s3SinkSecretAccessKey": "",
+"s3SinkRegion": "ap-south-1",
+"s3SinkBucket": "",
+"s3SinkBucketDir": "",
+"s3SinkBufferSize": 1500,
+"s3SinkDiscardMessages": true,
+"s3SinkOutputFormat": "flatjson",
+"s3SinkUploadInterval": 120
 }

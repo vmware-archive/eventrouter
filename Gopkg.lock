@@ -20,6 +20,46 @@
   version = "v1.15.0"
 
 [[projects]]
+  name = "github.com/aws/aws-sdk-go"
+  packages = [
+    "aws",
+    "aws/awserr",
+    "aws/awsutil",
+    "aws/client",
+    "aws/client/metadata",
+    "aws/corehandlers",
+    "aws/credentials",
+    "aws/credentials/ec2rolecreds",
+    "aws/credentials/endpointcreds",
+    "aws/credentials/stscreds",
+    "aws/csm",
+    "aws/defaults",
+    "aws/ec2metadata",
+    "aws/endpoints",
+    "aws/request",
+    "aws/session",
+    "aws/signer/v4",
+    "internal/sdkio",
+    "internal/sdkrand",
+    "internal/sdkuri",
+    "internal/shareddefaults",
+    "private/protocol",
+    "private/protocol/eventstream",
+    "private/protocol/eventstream/eventstreamapi",
+    "private/protocol/query",
+    "private/protocol/query/queryutil",
+    "private/protocol/rest",
+    "private/protocol/restxml",
+    "private/protocol/xml/xmlutil",
+    "service/s3",
+    "service/s3/s3iface",
+    "service/s3/s3manager",
+    "service/sts"
+  ]
+  revision = "04abd557eeaab3cfdded45467eea00fc03db9cb9"
+  version = "v1.15.26"
+
+[[projects]]
   branch = "master"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
@@ -87,6 +127,12 @@
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/go-ini/ini"
+  packages = ["."]
+  revision = "5cf292cae48347c2490ac1a58fe36735fb78df7e"
+  version = "v1.38.2"
 
 [[projects]]
   branch = "master"
@@ -202,10 +248,10 @@
   revision = "23c074d0eceb2b8a5bfdbb271ab780cde70f05a8"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/heptiolabs/eventrouter"
+  name = "github.com/heptio/eventrouter"
   packages = ["sinks"]
-  revision = "0e1ad7d7b6e6d3a369a7b5959e4bfd2cfe89141c"
+  revision = "697850b9eae595af067d50914ee4b3c751e360bf"
+  version = "v0.2"
 
 [[projects]]
   branch = "master"
@@ -220,8 +266,16 @@
   version = "0.2.4"
 
 [[projects]]
-  name = "github.com/json-iterator/go"
+  name = "github.com/jmespath/go-jmespath"
   packages = ["."]
+  revision = "0b12d6b5"
+
+[[projects]]
+  name = "github.com/json-iterator/go"
+  packages = [
+    ".",
+    "extra"
+  ]
   revision = "f7279a603edee96fe7764d3de9c6ff8cf9970994"
   version = "1.0.4"
 
@@ -230,6 +284,12 @@
   name = "github.com/juju/ratelimit"
   packages = ["."]
   revision = "59fac5042749a5afb9af70e813da1dd5474f0167"
+
+[[projects]]
+  name = "github.com/kelseyhightower/envconfig"
+  packages = ["."]
+  revision = "f611eb38b3875cc3bd991ca91c51d06446afa14c"
+  version = "v1.3.0"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -258,6 +318,12 @@
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   revision = "06020f85339e21b2478f756a78e295255ffa4d6a"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/nytlabs/gojsonexplode"
+  packages = ["."]
+  revision = "0f3fe6bb573f445e686ebae5579d064484ec1819"
 
 [[projects]]
   name = "github.com/pelletier/go-toml"
@@ -622,6 +688,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "13469236f3b8454be71957c92e5f50f92d6c0f3a79efbd79dcd520ae5fdf1eaf"
+  inputs-digest = "36f2f339b72a6007da5d1dc9e69bf2a341b00b6db5c0cff2c83d0166b710e77e"
   solver-name = "gps-cdcl"
   solver-version = 1
