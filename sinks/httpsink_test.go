@@ -28,9 +28,10 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/kubernetes/scheme"
+	ref "k8s.io/client-go/tools/reference"
 
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/api/core/v1"
 )
 
 func TestUpdateEvents(t *testing.T) {
@@ -62,12 +63,12 @@ func TestUpdateEvents(t *testing.T) {
 		},
 		Spec: v1.PodSpec{},
 	}
-	podRef, err := v1.GetReference(api.Scheme, testPod)
+	podRef, err := ref.GetReference(scheme.Scheme, testPod)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	evt := makeFakeEvent(podRef, api.EventTypeWarning, "CreateInCluster", "Fake pod creation event")
+	evt := makeFakeEvent(podRef, v1.EventTypeWarning, "CreateInCluster", "Fake pod creation event")
 
 	// 1. Try with a synchronous channel
 	sink := NewHTTPSink(srv.URL, false, 0)

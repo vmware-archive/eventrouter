@@ -22,7 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/api/core/v1"
 )
 
 // EventSinkInterface is the interface used to shunt events
@@ -57,7 +57,22 @@ func ManufactureSink() (e EventSinkInterface) {
 		h := NewHTTPSink(url, overflow, bufferSize)
 		go h.Run(make(chan bool))
 		return h
-	// case "kafka"
+	case "kafka":
+		viper.SetDefault("kafkaBrokers", []string{"kafka:9092"})
+		viper.SetDefault("kafkaTopic", "eventrouter")
+		viper.SetDefault("kafkaAsync", true)
+		viper.SetDefault("kafkaRetryMax", 5)
+
+		brokers := viper.GetStringSlice("kafkaBrokers")
+		topic := viper.GetString("kafkaTopic")
+		async := viper.GetBool("kakfkaAsync")
+		retryMax := viper.GetInt("kafkaRetryMax")
+
+		e, err := NewKafkaSink(brokers, topic, async, retryMax)
+		if err != nil {
+			panic(err.Error())
+		}
+		return e
 	// case "logfile"
 	default:
 		err := errors.New("Invalid Sink Specified")

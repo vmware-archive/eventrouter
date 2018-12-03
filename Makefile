@@ -13,28 +13,39 @@
 # limitations under the License.
 
 TARGET = eventrouter
-BUILDMNT = /go/src/github.com/openshift/$(TARGET)
+GOTARGET = github.com/openshift/$(TARGET)
+BUILDMNT = /go/src/$(GOTARGET)
 REGISTRY ?= gcr.io/heptio-images
-VERSION ?= v0.1
+VERSION ?= v0.2
 IMAGE = $(REGISTRY)/$(BIN)
-BUILD_IMAGE ?= golang:1.7-alpine
+BUILD_IMAGE ?= gcr.io/heptio-images/golang:1.9-alpine3.6
 DOCKER ?= docker
 DIR := ${CURDIR}
 
-all: local container
+ifneq ($(VERBOSE),)
+VERBOSE_FLAG = -v
+endif
+TESTARGS ?= $(VERBOSE_FLAG) -timeout 60s
+TEST_PKGS ?= $(GOTARGET)/sinks/...
+TEST = go test $(TEST_PKGS) $(TESTARGS)
 
-local:
-	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) go build -v
+DOCKER_BUILD ?= $(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) /bin/sh -c
+
+all: container
 
 container:
+	$(DOCKER_BUILD) 'go build'
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
-# TODO: Determine tagging mechanics
 push:
-	docker -- push $(REGISTRY)/$(TARGET)
+	$(DOCKER) push $(REGISTRY)/$(TARGET):latest
+	if git describe --tags --exact-match >/dev/null 2>&1; \
+	then \
+		$(DOCKER) push $(REGISTRY)/$(TARGET):$(VERSION); \
+	fi
 
 test:
-	$(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_IMAGE) /bin/sh -c 'go test $$(go list ./... | grep -v /vendor/)'
+	$(DOCKER_BUILD) '$(TEST)'
 
 .PHONY: all local container push
 
