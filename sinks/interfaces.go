@@ -128,6 +128,59 @@ func ManufactureSink() (e EventSinkInterface) {
 
 		go s.Run(make(chan bool))
 		return s
+	case "influxdb":
+		host := viper.GetString("influxdbHost")
+		if host == "" {
+			panic("s3 sink specified but influxdbHost not specified")
+		}
+
+		username := viper.GetString("influxdbUsername")
+		if username == "" {
+			panic("s3 sink specified but influxdbUsername not specified")
+		}
+
+		password := viper.GetString("influxdbPassword")
+		if password == "" {
+			panic("s3 sink specified but influxdbPassword not specified")
+		}
+
+		viper.SetDefault("influxdbName", "k8s")
+		viper.SetDefault("influxdbSecure", false)
+		viper.SetDefault("influxdbWithFields", false)
+		viper.SetDefault("influxdbInsecureSsl", false)
+		viper.SetDefault("influxdbRetentionPolicy", "0")
+		viper.SetDefault("influxdbClusterName", "default")
+		viper.SetDefault("influxdbDisableCounterMetrics", false)
+		viper.SetDefault("influxdbConcurrency", 1)
+
+		dbName := viper.GetString("influxdbName")
+		secure := viper.GetBool("influxdbSecure")
+		withFields := viper.GetBool("influxdbWithFields")
+		insecureSsl := viper.GetBool("influxdbInsecureSsl")
+		retentionPolicy := viper.GetString("influxdbRetentionPolicy")
+		cluterName := viper.GetString("influxdbClusterName")
+		disableCounterMetrics := viper.GetBool("influxdbDisableCounterMetrics")
+		concurrency := viper.GetInt("influxdbConcurrency")
+
+		cfg := InfluxdbConfig{
+			User:                  username,
+			Password:              password,
+			Secure:                secure,
+			Host:                  host,
+			DbName:                dbName,
+			WithFields:            withFields,
+			InsecureSsl:           insecureSsl,
+			RetentionPolicy:       retentionPolicy,
+			ClusterName:           cluterName,
+			DisableCounterMetrics: disableCounterMetrics,
+			Concurrency:           concurrency,
+		}
+
+		influx, err := NewInfuxdbSink(cfg)
+		if err != nil {
+			panic(err.Error())
+		}
+		return influx
 	// case "logfile"
 	default:
 		err := errors.New("Invalid Sink Specified")
