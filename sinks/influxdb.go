@@ -60,9 +60,6 @@ const (
 	valueField = "value"
 	// Event special tags
 	dbNotFoundError = "database not found"
-
-	// Maximum number of influxdb Points to be sent in one batch.
-	maxSendBatchSize = 1000
 )
 
 type LabelDescriptor struct {

@@ -131,17 +131,17 @@ func ManufactureSink() (e EventSinkInterface) {
 	case "influxdb":
 		host := viper.GetString("influxdbHost")
 		if host == "" {
-			panic("s3 sink specified but influxdbHost not specified")
+			panic("influxdb sink specified but influxdbHost not specified")
 		}
 
 		username := viper.GetString("influxdbUsername")
 		if username == "" {
-			panic("s3 sink specified but influxdbUsername not specified")
+			panic("influxdb sink specified but influxdbUsername not specified")
 		}
 
 		password := viper.GetString("influxdbPassword")
 		if password == "" {
-			panic("s3 sink specified but influxdbPassword not specified")
+			panic("influxdb sink specified but influxdbPassword not specified")
 		}
 
 		viper.SetDefault("influxdbName", "k8s")
