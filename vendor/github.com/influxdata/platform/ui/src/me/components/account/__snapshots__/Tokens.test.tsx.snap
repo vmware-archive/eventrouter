@@ -1,0 +1,80 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Account rendering renders! 1`] = `
+<Tokens
+  authorizationsLink="api/v2/authorizations"
+>
+  <Panel>
+    <div
+      className="panel"
+    >
+      <PanelBody>
+        <div
+          className="panel-body"
+        >
+          <Input
+            autoFocus={false}
+            autocomplete="off"
+            disabledTitleText="This input is disabled"
+            name=""
+            onChange={[Function]}
+            placeholder="Filter tokens by column"
+            size="sm"
+            spellCheck={false}
+            status="default"
+            titleText=""
+            value=""
+            widthPixels={256}
+          >
+            <div
+              className="input input-sm"
+              style={
+                Object {
+                  "width": "256px",
+                }
+              }
+            >
+              <input
+                autoComplete="off"
+                autoFocus={false}
+                className="input-field"
+                disabled={false}
+                name=""
+                onChange={[Function]}
+                placeholder="Filter tokens by column"
+                spellCheck={false}
+                title=""
+                value=""
+              />
+              <div
+                className="input-shadow"
+              />
+            </div>
+          </Input>
+        </div>
+      </PanelBody>
+      <PanelBody>
+        <div
+          className="panel-body"
+        >
+          <ResourceFetcher
+            fetcher={[Function]}
+          >
+            <Spinner
+              loading="NotStarted"
+            >
+              <div
+                className="spinner-container"
+              >
+                <div
+                  className="spinner"
+                />
+              </div>
+            </Spinner>
+          </ResourceFetcher>
+        </div>
+      </PanelBody>
+    </div>
+  </Panel>
+</Tokens>
+`;
