@@ -119,7 +119,7 @@ func (er *EventRouter) Run(stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 	defer glog.Infof("Shutting down EventRouter")
 
-	glog.Infof("Starting EvenRouter")
+	glog.Infof("Starting EventRouter")
 
 	// here is where we kick the caches into gear
 	if !cache.WaitForCacheSync(stopCh, er.eListerSynched) {
