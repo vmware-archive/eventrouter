@@ -1,6 +1,10 @@
 {
 "kubeconfig": "/var/run/kubernetes/admin.kubeconfig",
 "sink": "glog",
+"kafkaBrokers": "kafka:9092",
+"kafkaTopic": "topic",
+"kafkaSaslUser": "user",
+"kafkaSaslPwd": "password"
 "httpSinkUrl": "http://localhost:8080",
 "httpSinkBufferSize": 1500,
 "httpSinkDiscardMessages": true,

@@ -30,9 +30,9 @@ type KafkaSink struct {
 }
 
 // NewKafkaSinkSink will create a new KafkaSink with default options, returned as an EventSinkInterface
-func NewKafkaSink(brokers []string, topic string, async bool, retryMax int) (EventSinkInterface, error) {
+func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, saslUser string, saslPwd string) (EventSinkInterface, error) {
 
-	p, err := sinkFactory(brokers, async, retryMax)
+	p, err := sinkFactory(brokers, async, retryMax, saslUser, saslPwd)
 
 	if err != nil {
 		return nil, err
@@ -44,10 +44,16 @@ func NewKafkaSink(brokers []string, topic string, async bool, retryMax int) (Eve
 	}, err
 }
 
-func sinkFactory(brokers []string, async bool, retryMax int) (interface{}, error) {
+func sinkFactory(brokers []string, async bool, retryMax int, saslUser string, saslPwd string) (interface{}, error) {
 	config := sarama.NewConfig()
 	config.Producer.Retry.Max = retryMax
 	config.Producer.RequiredAcks = sarama.WaitForAll
+
+	if saslUser != "" && saslPwd != "" {
+		config.Net.SASL.Enable = true
+		config.Net.SASL.User = saslUser
+		config.Net.SASL.Password = saslPwd
+	}
 
 	if async {
 		return sarama.NewAsyncProducer(brokers, config)

@@ -63,13 +63,17 @@ func ManufactureSink() (e EventSinkInterface) {
 		viper.SetDefault("kafkaTopic", "eventrouter")
 		viper.SetDefault("kafkaAsync", true)
 		viper.SetDefault("kafkaRetryMax", 5)
+		viper.SetDefault("kafkaSaslUser", "")
+		viper.SetDefault("kafkaSaslPwd", "")
 
 		brokers := viper.GetStringSlice("kafkaBrokers")
 		topic := viper.GetString("kafkaTopic")
 		async := viper.GetBool("kakfkaAsync")
 		retryMax := viper.GetInt("kafkaRetryMax")
+		saslUser := viper.GetString("kafkaSaslUser")
+		saslPwd := viper.GetString("kafkaSaslPwd")
 
-		e, err := NewKafkaSink(brokers, topic, async, retryMax)
+		e, err := NewKafkaSink(brokers, topic, async, retryMax, saslUser, saslPwd)
 		if err != nil {
 			panic(err.Error())
 		}
