@@ -1,0 +1,51 @@
+@import "src/style/modules";
+
+.query-builder {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  padding: 10px;
+  @include no-user-select();
+  background: $g3-castle;
+}
+
+.query-builder--panel {
+  margin-left: 5px;
+  height: 100%;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+
+  &:first-child {
+    margin-left: 0;
+  }
+}
+
+.query-builder--panel-header {
+  padding: 10px 0;
+  border-radius: 5px 5px 0 0;
+  text-transform: uppercase;
+  font-weight: 500;
+  font-size: 13px;
+  color: $g8-storm;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  small {
+    margin-left: 10px;
+    padding: 2px 4px 2px 3px;
+    border-radius: 2px;
+    background-color: $g4-onyx;
+    font-style: italic;
+    font-size: 11px;
+  }
+}
+
+.builder-card {
+  height: 100%;
+  flex: 1 1 0;
+}
