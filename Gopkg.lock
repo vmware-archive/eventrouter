@@ -317,6 +317,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:16d5b2216f2f9319843dc58de9528062508d32f4dc53ebc5b21e389efa732349"
+  name = "github.com/heptiolabs/eventrouter"
+  packages = ["sinks"]
+  pruneopts = ""
+  revision = "7310ab6ff68700e676efe464805164727565cc88"
+
+[[projects]]
+  branch = "master"
   digest = "1:f81c8d7354cc0c6340f2f7a48724ee6c2b3db3e918ecd441c985b4d2d97dd3e7"
   name = "github.com/howeyc/gopass"
   packages = ["."]
@@ -335,7 +343,6 @@
   digest = "1:82736b0fd80f657b95306b226728734e8f7d35505a14acdcd09a7c433dcaa9dd"
   name = "github.com/influxdata/influxdb"
   packages = [
-    ".",
     "client",
     "models",
     "pkg/escape",
@@ -521,6 +528,17 @@
   packages = ["."]
   pruneopts = ""
   revision = "e181e095bae94582363434144c61a9653aff6e50"
+
+[[projects]]
+  digest = "1:8d9210a1e016c459ee6a4eaeb52dd3fff1ca4478d81023e5c7b0dac908e32901"
+  name = "github.com/rockset/rockset-go-client"
+  packages = [
+    ".",
+    "lib/go",
+  ]
+  pruneopts = ""
+  revision = "b392a7cd065cf8f6ea6982724fdbc89f175e3931"
+  version = "v0.6.0"
 
 [[projects]]
   branch = "master"
@@ -857,7 +875,7 @@
     "github.com/eapache/channels",
     "github.com/golang/glog",
     "github.com/heptio/eventrouter/sinks",
-    "github.com/influxdata/influxdb",
+    "github.com/heptiolabs/eventrouter/sinks",
     "github.com/influxdata/influxdb/client",
     "github.com/json-iterator/go",
     "github.com/json-iterator/go/extra",
@@ -865,6 +883,8 @@
     "github.com/nytlabs/gojsonexplode",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
+    "github.com/rockset/rockset-go-client",
+    "github.com/rockset/rockset-go-client/lib/go",
     "github.com/sethgrid/pester",
     "github.com/spf13/viper",
     "k8s.io/api/core/v1",

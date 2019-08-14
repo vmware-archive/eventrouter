@@ -71,3 +71,7 @@
 [[constraint]]
   name = "github.com/influxdata/influxdb"
   version = "1.7.4"
+
+[[constraint]]
+  name = "github.com/rockset/rockset-go-client"
+  version = "0.6.0"
