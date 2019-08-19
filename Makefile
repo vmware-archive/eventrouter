@@ -36,7 +36,7 @@ DOCKER_TEST ?= $(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_I
 all: container
 
 container:
-	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
+	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest --target release -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
 push:
 	$(DOCKER) push $(REGISTRY)/$(TARGET):latest
