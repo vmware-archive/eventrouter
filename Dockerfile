@@ -17,9 +17,6 @@ MAINTAINER Timothy St. Clair "tstclair@heptio.com"
 WORKDIR /src/
 COPY . .
 
-# ENTRYPOINT [ "/bin/sh", "-c" ]
-# FROM base AS build
-
 RUN CGO_ENABLED=0 go build -mod=vendor -o /src/eventrouter
 
 FROM alpine:3.9 as release
