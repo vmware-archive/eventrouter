@@ -4,10 +4,10 @@ build:
   tagPolicy:
     sha256: {}
   artifacts:
-  - image: quay.io/newrelic/nri-eventrouter
-    docker:
+  - image: gcr.io/heptio-images/eventrouter
+    docker: 
       dockerfile: Dockerfile
 deploy:
   kubectl:
     manifests:
-    - yaml/local.yaml
+    - yaml/eventrouter.yaml
