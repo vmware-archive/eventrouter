@@ -22,11 +22,6 @@ By default, eventrouter is configured to leverage existing EFK stacks by outputt
   _sink_
 - This service does not serve as a storage layer, that is also the responsibility of the _sink_
 
-## Running Eventrouter with Skaffold
-
-1.  Make sure you have [skaffold installed](https://skaffold.dev/docs/getting-started/#installing-skaffold)
-2.  Run `skaffold dev`.
-
 ## Running Eventrouter
 
 Standup:
@@ -50,3 +45,9 @@ $ kubectl logs -f deployment/eventrouter -n kube-system
 Watch events roll through the system and hopefully stream into your ES cluster for mining, Hooray!
 
 [kubernetes]: https://github.com/kubernetes/kubernetes/ "Kubernetes"
+
+## Running Eventrouter with Skaffold
+
+1.  Make sure you have [skaffold](https://skaffold.dev/docs/getting-started/#installing-skaffold) and [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) installed
+2.  Run `skaffold dev` from the root of this repository
+3.  Eventrouter will be compiled and run in your minikube cluster. Any change will cause a recompile & restart of this application.
