@@ -164,3 +164,5 @@ Clients are available for the following destinations:
 * Prometheus - https://github.com/deathowl/go-metrics-prometheus
 * DataDog - https://github.com/syntaqx/go-metrics-datadog
 * SignalFX - https://github.com/pascallouisperez/go-metrics-signalfx
+* Honeycomb - https://github.com/getspine/go-metrics-honeycomb
+* Wavefront - https://github.com/wavefrontHQ/go-metrics-wavefront

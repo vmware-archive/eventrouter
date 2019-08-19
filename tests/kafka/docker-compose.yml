@@ -4,8 +4,8 @@ services:
   app:
     image: golang:1.6.1-alpine
     volumes:
-      - ../../:/go/src/github.com/heptio/eventrouter
-    working_dir: /go/src/github.com/heptio/eventrouter
+      - ../../:/go/src/github.com/heptiolabs/eventrouter
+    working_dir: /go/src/github.com/heptiolabs/eventrouter
     command: ["go", "run", "tests/kafka/main.go"]
     links:
       - kafka

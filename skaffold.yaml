@@ -1,0 +1,13 @@
+apiVersion: skaffold/v1beta11
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+  - image: quay.io/newrelic/nri-eventrouter
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kubectl:
+    manifests:
+    - yaml/local.yaml

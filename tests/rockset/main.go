@@ -14,7 +14,8 @@ limitations under the License.
 package main
 
 import (
-	"eventrouter/sinks"
+	"github.com/heptiolabs/eventrouter/sinks"
+
 	"fmt"
 	"time"
 
