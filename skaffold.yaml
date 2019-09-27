@@ -1,0 +1,13 @@
+apiVersion: skaffold/v1beta11
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+  - image: gcr.io/heptio-images/eventrouter
+    docker: 
+      dockerfile: Dockerfile
+deploy:
+  kubectl:
+    manifests:
+    - yaml/eventrouter.yaml

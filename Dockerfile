@@ -11,13 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+FROM golang:1.12.9 AS build
 
-FROM alpine:3.4
 MAINTAINER Timothy St. Clair "tstclair@heptio.com"  
+WORKDIR /src/
+COPY . .
 
+RUN CGO_ENABLED=0 go build -mod=vendor -o /src/eventrouter
+
+FROM alpine:3.9 as release
+
+WORKDIR /app
 RUN apk update --no-cache && apk add ca-certificates
-ADD eventrouter /eventrouter 
+COPY --from=build /src/eventrouter .
 USER nobody:nobody
 
-CMD ["/bin/sh", "-c", "/eventrouter -v 3 -logtostderr"]
-
+ENTRYPOINT [ "./eventrouter" ]
+CMD ["-v", "3", "-logtostderr"]

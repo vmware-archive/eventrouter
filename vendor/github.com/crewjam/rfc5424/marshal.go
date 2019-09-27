@@ -3,9 +3,10 @@ package rfc5424
 import (
 	"bytes"
 	"fmt"
-	"time"
 	"unicode/utf8"
 )
+
+const rfc3339Micro = "2006-01-02T15:04:05.999999Z07:00"
 
 // allowLongSdNames is true to allow names longer than the RFC-specified limit
 // of 32-characters. (When true, this violates RFC-5424).
@@ -146,7 +147,7 @@ func (m Message) MarshalBinary() ([]byte, error) {
 	b := bytes.NewBuffer(nil)
 	fmt.Fprintf(b, "<%d>1 %s %s %s %s %s ",
 		m.Priority,
-		m.Timestamp.Format(time.RFC3339Nano),
+		m.Timestamp.Format(rfc3339Micro),
 		nilify(m.Hostname),
 		nilify(m.AppName),
 		nilify(m.ProcessID),

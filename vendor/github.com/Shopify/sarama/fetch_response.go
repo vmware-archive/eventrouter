@@ -1,6 +1,9 @@
 package sarama
 
-import "time"
+import (
+	"sort"
+	"time"
+)
 
 type AbortedTransaction struct {
 	ProducerID  int64
@@ -31,7 +34,9 @@ type FetchResponseBlock struct {
 	HighWaterMarkOffset int64
 	LastStableOffset    int64
 	AbortedTransactions []*AbortedTransaction
-	Records             Records
+	Records             *Records // deprecated: use FetchResponseBlock.RecordsSet
+	RecordsSet          []*Records
+	Partial             bool
 }
 
 func (b *FetchResponseBlock) decode(pd packetDecoder, version int16) (err error) {
@@ -79,13 +84,78 @@ func (b *FetchResponseBlock) decode(pd packetDecoder, version int16) (err error)
 	if err != nil {
 		return err
 	}
-	if recordsSize > 0 {
-		if err = b.Records.decode(recordsDecoder); err != nil {
+
+	b.RecordsSet = []*Records{}
+
+	for recordsDecoder.remaining() > 0 {
+		records := &Records{}
+		if err := records.decode(recordsDecoder); err != nil {
+			// If we have at least one decoded records, this is not an error
+			if err == ErrInsufficientData {
+				if len(b.RecordsSet) == 0 {
+					b.Partial = true
+				}
+				break
+			}
 			return err
+		}
+
+		partial, err := records.isPartial()
+		if err != nil {
+			return err
+		}
+
+		n, err := records.numRecords()
+		if err != nil {
+			return err
+		}
+
+		if n > 0 || (partial && len(b.RecordsSet) == 0) {
+			b.RecordsSet = append(b.RecordsSet, records)
+
+			if b.Records == nil {
+				b.Records = records
+			}
+		}
+
+		overflow, err := records.isOverflow()
+		if err != nil {
+			return err
+		}
+
+		if partial || overflow {
+			break
 		}
 	}
 
 	return nil
+}
+
+func (b *FetchResponseBlock) numRecords() (int, error) {
+	sum := 0
+
+	for _, records := range b.RecordsSet {
+		count, err := records.numRecords()
+		if err != nil {
+			return 0, err
+		}
+
+		sum += count
+	}
+
+	return sum, nil
+}
+
+func (b *FetchResponseBlock) isPartial() (bool, error) {
+	if b.Partial {
+		return true, nil
+	}
+
+	if len(b.RecordsSet) == 1 {
+		return b.RecordsSet[0].isPartial()
+	}
+
+	return false, nil
 }
 
 func (b *FetchResponseBlock) encode(pe packetEncoder, version int16) (err error) {
@@ -107,17 +177,32 @@ func (b *FetchResponseBlock) encode(pe packetEncoder, version int16) (err error)
 	}
 
 	pe.push(&lengthField{})
-	err = b.Records.encode(pe)
-	if err != nil {
-		return err
+	for _, records := range b.RecordsSet {
+		err = records.encode(pe)
+		if err != nil {
+			return err
+		}
 	}
 	return pe.pop()
 }
 
+func (b *FetchResponseBlock) getAbortedTransactions() []*AbortedTransaction {
+	// I can't find any doc that guarantee the field `fetchResponse.AbortedTransactions` is ordered
+	// plus Java implementation use a PriorityQueue based on `FirstOffset`. I guess we have to order it ourself
+	at := b.AbortedTransactions
+	sort.Slice(
+		at,
+		func(i, j int) bool { return at[i].FirstOffset < at[j].FirstOffset },
+	)
+	return at
+}
+
 type FetchResponse struct {
-	Blocks       map[string]map[int32]*FetchResponseBlock
-	ThrottleTime time.Duration
-	Version      int16 // v1 requires 0.9+, v2 requires 0.10+
+	Blocks        map[string]map[int32]*FetchResponseBlock
+	ThrottleTime  time.Duration
+	Version       int16 // v1 requires 0.9+, v2 requires 0.10+
+	LogAppendTime bool
+	Timestamp     time.Time
 }
 
 func (r *FetchResponse) decode(pd packetDecoder, version int16) (err error) {
@@ -220,7 +305,7 @@ func (r *FetchResponse) requiredVersion() KafkaVersion {
 	case 4:
 		return V0_11_0_0
 	default:
-		return minVersion
+		return MinVersion
 	}
 }
 
@@ -284,29 +369,118 @@ func encodeKV(key, value Encoder) ([]byte, []byte) {
 	return kb, vb
 }
 
-func (r *FetchResponse) AddMessage(topic string, partition int32, key, value Encoder, offset int64) {
+func (r *FetchResponse) AddMessageWithTimestamp(topic string, partition int32, key, value Encoder, offset int64, timestamp time.Time, version int8) {
 	frb := r.getOrCreateBlock(topic, partition)
 	kb, vb := encodeKV(key, value)
-	msg := &Message{Key: kb, Value: vb}
-	msgBlock := &MessageBlock{Msg: msg, Offset: offset}
-	set := frb.Records.msgSet
-	if set == nil {
-		set = &MessageSet{}
-		frb.Records = newLegacyRecords(set)
+	if r.LogAppendTime {
+		timestamp = r.Timestamp
 	}
+	msg := &Message{Key: kb, Value: vb, LogAppendTime: r.LogAppendTime, Timestamp: timestamp, Version: version}
+	msgBlock := &MessageBlock{Msg: msg, Offset: offset}
+	if len(frb.RecordsSet) == 0 {
+		records := newLegacyRecords(&MessageSet{})
+		frb.RecordsSet = []*Records{&records}
+	}
+	set := frb.RecordsSet[0].MsgSet
 	set.Messages = append(set.Messages, msgBlock)
 }
 
-func (r *FetchResponse) AddRecord(topic string, partition int32, key, value Encoder, offset int64) {
+func (r *FetchResponse) AddRecordWithTimestamp(topic string, partition int32, key, value Encoder, offset int64, timestamp time.Time) {
 	frb := r.getOrCreateBlock(topic, partition)
 	kb, vb := encodeKV(key, value)
-	rec := &Record{Key: kb, Value: vb, OffsetDelta: offset}
-	batch := frb.Records.recordBatch
-	if batch == nil {
-		batch = &RecordBatch{Version: 2}
-		frb.Records = newDefaultRecords(batch)
+	if len(frb.RecordsSet) == 0 {
+		records := newDefaultRecords(&RecordBatch{Version: 2, LogAppendTime: r.LogAppendTime, FirstTimestamp: timestamp, MaxTimestamp: r.Timestamp})
+		frb.RecordsSet = []*Records{&records}
 	}
+	batch := frb.RecordsSet[0].RecordBatch
+	rec := &Record{Key: kb, Value: vb, OffsetDelta: offset, TimestampDelta: timestamp.Sub(batch.FirstTimestamp)}
 	batch.addRecord(rec)
+}
+
+// AddRecordBatchWithTimestamp is similar to AddRecordWithTimestamp
+// But instead of appending 1 record to a batch, it append a new batch containing 1 record to the fetchResponse
+// Since transaction are handled on batch level (the whole batch is either committed or aborted), use this to test transactions
+func (r *FetchResponse) AddRecordBatchWithTimestamp(topic string, partition int32, key, value Encoder, offset int64, producerID int64, isTransactional bool, timestamp time.Time) {
+	frb := r.getOrCreateBlock(topic, partition)
+	kb, vb := encodeKV(key, value)
+
+	records := newDefaultRecords(&RecordBatch{Version: 2, LogAppendTime: r.LogAppendTime, FirstTimestamp: timestamp, MaxTimestamp: r.Timestamp})
+	batch := &RecordBatch{
+		Version:         2,
+		LogAppendTime:   r.LogAppendTime,
+		FirstTimestamp:  timestamp,
+		MaxTimestamp:    r.Timestamp,
+		FirstOffset:     offset,
+		LastOffsetDelta: 0,
+		ProducerID:      producerID,
+		IsTransactional: isTransactional,
+	}
+	rec := &Record{Key: kb, Value: vb, OffsetDelta: 0, TimestampDelta: timestamp.Sub(batch.FirstTimestamp)}
+	batch.addRecord(rec)
+	records.RecordBatch = batch
+
+	frb.RecordsSet = append(frb.RecordsSet, &records)
+}
+
+func (r *FetchResponse) AddControlRecordWithTimestamp(topic string, partition int32, offset int64, producerID int64, recordType ControlRecordType, timestamp time.Time) {
+	frb := r.getOrCreateBlock(topic, partition)
+
+	// batch
+	batch := &RecordBatch{
+		Version:         2,
+		LogAppendTime:   r.LogAppendTime,
+		FirstTimestamp:  timestamp,
+		MaxTimestamp:    r.Timestamp,
+		FirstOffset:     offset,
+		LastOffsetDelta: 0,
+		ProducerID:      producerID,
+		IsTransactional: true,
+		Control:         true,
+	}
+
+	// records
+	records := newDefaultRecords(nil)
+	records.RecordBatch = batch
+
+	// record
+	crAbort := ControlRecord{
+		Version: 0,
+		Type:    recordType,
+	}
+	crKey := &realEncoder{raw: make([]byte, 4)}
+	crValue := &realEncoder{raw: make([]byte, 6)}
+	crAbort.encode(crKey, crValue)
+	rec := &Record{Key: ByteEncoder(crKey.raw), Value: ByteEncoder(crValue.raw), OffsetDelta: 0, TimestampDelta: timestamp.Sub(batch.FirstTimestamp)}
+	batch.addRecord(rec)
+
+	frb.RecordsSet = append(frb.RecordsSet, &records)
+}
+
+func (r *FetchResponse) AddMessage(topic string, partition int32, key, value Encoder, offset int64) {
+	r.AddMessageWithTimestamp(topic, partition, key, value, offset, time.Time{}, 0)
+}
+
+func (r *FetchResponse) AddRecord(topic string, partition int32, key, value Encoder, offset int64) {
+	r.AddRecordWithTimestamp(topic, partition, key, value, offset, time.Time{})
+}
+
+func (r *FetchResponse) AddRecordBatch(topic string, partition int32, key, value Encoder, offset int64, producerID int64, isTransactional bool) {
+	r.AddRecordBatchWithTimestamp(topic, partition, key, value, offset, producerID, isTransactional, time.Time{})
+}
+
+func (r *FetchResponse) AddControlRecord(topic string, partition int32, offset int64, producerID int64, recordType ControlRecordType) {
+	// define controlRecord key and value
+	r.AddControlRecordWithTimestamp(topic, partition, offset, producerID, recordType, time.Time{})
+}
+
+func (r *FetchResponse) SetLastOffsetDelta(topic string, partition int32, offset int32) {
+	frb := r.getOrCreateBlock(topic, partition)
+	if len(frb.RecordsSet) == 0 {
+		records := newDefaultRecords(&RecordBatch{Version: 2})
+		frb.RecordsSet = []*Records{&records}
+	}
+	batch := frb.RecordsSet[0].RecordBatch
+	batch.LastOffsetDelta = offset
 }
 
 func (r *FetchResponse) SetLastStableOffset(topic string, partition int32, offset int64) {
