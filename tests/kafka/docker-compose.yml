@@ -1,11 +1,11 @@
-version: "2"
+version: "3"
 
 services:
   app:
-    image: golang:1.6.1-alpine
+    image: golang:1.12.9
     volumes:
-      - ../../:/go/src/github.com/heptio/eventrouter
-    working_dir: /go/src/github.com/heptio/eventrouter
+      - ../../:/src/
+    working_dir: /src/
     command: ["go", "run", "tests/kafka/main.go"]
     links:
       - kafka

@@ -21,7 +21,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/heptio/eventrouter/sinks"
+	"github.com/heptiolabs/eventrouter/sinks"
 	"github.com/kelseyhightower/envconfig"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +43,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	kSink, err := sinks.NewKafkaSink(k.Brokers, k.Topic, k.Async, k.RetryMax)
+	kSink, err := sinks.NewKafkaSink(k.Brokers, k.Topic, k.Async, k.RetryMax, "user", "password")
 	if err != nil {
 		log.Fatal(err)
 	}

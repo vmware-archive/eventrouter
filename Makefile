@@ -14,11 +14,11 @@
 
 TARGET = eventrouter
 GOTARGET = github.com/heptiolabs/$(TARGET)
-BUILDMNT = /go/src/$(GOTARGET)
+BUILDMNT = /src/
 REGISTRY ?= gcr.io/heptio-images
-VERSION ?= v0.2
+VERSION ?= v0.3
 IMAGE = $(REGISTRY)/$(BIN)
-BUILD_IMAGE ?= gcr.io/heptio-images/golang:1.9-alpine3.6
+BUILD_IMAGE ?= golang:1.12.9
 DOCKER ?= docker
 DIR := ${CURDIR}
 
@@ -36,7 +36,7 @@ DOCKER_BUILD ?= $(DOCKER) run --rm -v $(DIR):$(BUILDMNT) -w $(BUILDMNT) $(BUILD_
 all: container
 
 container:
-	$(DOCKER_BUILD) 'go build'
+	$(DOCKER_BUILD) 'CGO_ENABLED=0 go build'
 	$(DOCKER) build -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
 push:
