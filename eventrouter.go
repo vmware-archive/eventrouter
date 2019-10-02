@@ -52,11 +52,33 @@ var (
 		"reason",
 		"source",
 	})
+	kubernetesNormalEventGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "heptio_eventrouter_normal_current",
+		Help: "Current number of normal events in the kubernetes cluster",
+	}, []string{
+		"involved_object_kind",
+		"involved_object_name",
+		"involved_object_namespace",
+		"reason",
+		"source",
+	})
+	kubernetesWarningEventGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "heptio_eventrouter_warnings_current",
+		Help: "Current number of warning events in the kubernetes cluster",
+	}, []string{
+		"involved_object_kind",
+		"involved_object_name",
+		"involved_object_namespace",
+		"reason",
+		"source",
+	})
 )
 
 func init() {
 	prometheus.MustRegister(kubernetesWarningEventCounterVec)
 	prometheus.MustRegister(kubernetesNormalEventCounterVec)
+	prometheus.MustRegister(kubernetesWarningEventGaugeVec)
+	prometheus.MustRegister(kubernetesNormalEventGaugeVec)
 }
 
 // EventRouter is responsible for maintaining a stream of kubernetes
@@ -135,6 +157,7 @@ func prometheusEvent(event *v1.Event) {
 			event.Reason,
 			event.Source.Host,
 		)
+
 	} else if event.Type == "Warning" {
 		counter, err = kubernetesWarningEventCounterVec.GetMetricWithLabelValues(
 			event.InvolvedObject.Kind,
@@ -151,11 +174,50 @@ func prometheusEvent(event *v1.Event) {
 	} else {
 		counter.Add(1)
 	}
+
+	prometheusGaugeEvent(event, true)
+}
+
+// prometheusGaugeEvent is called when an event is added or deleted from the system
+func prometheusGaugeEvent(event *v1.Event, shouldIncrement bool) {
+	var gauge prometheus.Gauge
+	var err error
+
+	if event.Type == "Normal" {
+		gauge, err = kubernetesNormalEventGaugeVec.GetMetricWithLabelValues(
+			event.InvolvedObject.Kind,
+			event.InvolvedObject.Name,
+			event.InvolvedObject.Namespace,
+			event.Reason,
+			event.Source.Host,
+		)
+
+	} else if event.Type == "Warning" {
+		gauge, err = kubernetesWarningEventGaugeVec.GetMetricWithLabelValues(
+			event.InvolvedObject.Kind,
+			event.InvolvedObject.Name,
+			event.InvolvedObject.Namespace,
+			event.Reason,
+			event.Source.Host,
+		)
+	}
+
+	if err != nil {
+		// Not sure this is the right place to log this error?
+		glog.Warning(err)
+	} else {
+		if shouldIncrement {
+			gauge.Inc()
+		} else {
+			gauge.Dec()
+		}
+	}
 }
 
 // deleteEvent should only occur when the system garbage collects events via TTL expiration
 func (er *EventRouter) deleteEvent(obj interface{}) {
 	e := obj.(*v1.Event)
+	prometheusGaugeEvent(e, false)
 	// NOTE: This should *only* happen on TTL expiration there
 	// is no reason to push this to a sink
 	glog.V(5).Infof("Event Deleted from the system:\n%v", e)
