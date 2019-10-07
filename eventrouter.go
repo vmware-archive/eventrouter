@@ -22,6 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/heptiolabs/eventrouter/sinks"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/spf13/viper"
 
 	v1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -55,8 +56,10 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(kubernetesWarningEventCounterVec)
-	prometheus.MustRegister(kubernetesNormalEventCounterVec)
+	if viper.GetBool("enable-prometheus") {
+		prometheus.MustRegister(kubernetesWarningEventCounterVec)
+		prometheus.MustRegister(kubernetesNormalEventCounterVec)
+	}
 }
 
 // EventRouter is responsible for maintaining a stream of kubernetes
@@ -124,6 +127,9 @@ func (er *EventRouter) updateEvent(objOld interface{}, objNew interface{}) {
 
 // prometheusEvent is called when an event is added or updated
 func prometheusEvent(event *v1.Event) {
+	if !viper.GetBool("enable-prometheus") {
+		return
+	}
 	var counter prometheus.Counter
 	var err error
 

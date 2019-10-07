@@ -73,6 +73,7 @@ func loadConfig() kubernetes.Interface {
 	viper.SetDefault("kubeconfig", "")
 	viper.SetDefault("sink", "glog")
 	viper.SetDefault("resync-interval", time.Minute*30)
+	viper.SetDefault("enable-prometheus", true)
 	if err = viper.ReadInConfig(); err != nil {
 		panic(err.Error())
 	}
@@ -114,11 +115,13 @@ func main() {
 	stop := sigHandler()
 
 	// Startup the http listener for Prometheus Metrics endpoint.
-	go func() {
-		glog.Info("Starting prometheus metrics.")
-		http.Handle("/metrics", promhttp.Handler())
-		glog.Warning(http.ListenAndServe(*addr, nil))
-	}()
+	if viper.GetBool("enable-prometheus") {
+		go func() {
+			glog.Info("Starting prometheus metrics.")
+			http.Handle("/metrics", promhttp.Handler())
+			glog.Warning(http.ListenAndServe(*addr, nil))
+		}()
+	}
 
 	// Startup the EventRouter
 	wg.Add(1)
