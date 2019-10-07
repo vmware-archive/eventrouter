@@ -53,6 +53,26 @@ var (
 		"reason",
 		"source",
 	})
+	kubernetesInfoEventCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "heptio_eventrouter_info_total",
+		Help: "Total number of info events in the kubernetes cluster",
+	}, []string{
+		"involved_object_kind",
+		"involved_object_name",
+		"involved_object_namespace",
+		"reason",
+		"source",
+	})
+	kubernetesUnknownEventCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "heptio_eventrouter_unknown_total",
+		Help: "Total number of events of unknown type in the kubernetes cluster",
+	}, []string{
+		"involved_object_kind",
+		"involved_object_name",
+		"involved_object_namespace",
+		"reason",
+		"source",
+	})
 )
 
 // EventRouter is responsible for maintaining a stream of kubernetes
@@ -77,6 +97,8 @@ func NewEventRouter(kubeClient kubernetes.Interface, eventsInformer coreinformer
 	if viper.GetBool("enable-prometheus") {
 		prometheus.MustRegister(kubernetesWarningEventCounterVec)
 		prometheus.MustRegister(kubernetesNormalEventCounterVec)
+		prometheus.MustRegister(kubernetesInfoEventCounterVec)
+		prometheus.MustRegister(kubernetesUnknownEventCounterVec)
 	}
 
 	er := &EventRouter{
@@ -131,7 +153,8 @@ func prometheusEvent(event *v1.Event) {
 	var counter prometheus.Counter
 	var err error
 
-	if event.Type == "Normal" {
+	switch event.Type {
+	case "Normal":
 		counter, err = kubernetesNormalEventCounterVec.GetMetricWithLabelValues(
 			event.InvolvedObject.Kind,
 			event.InvolvedObject.Name,
@@ -139,8 +162,24 @@ func prometheusEvent(event *v1.Event) {
 			event.Reason,
 			event.Source.Host,
 		)
-	} else if event.Type == "Warning" {
+	case "Warning":
 		counter, err = kubernetesWarningEventCounterVec.GetMetricWithLabelValues(
+			event.InvolvedObject.Kind,
+			event.InvolvedObject.Name,
+			event.InvolvedObject.Namespace,
+			event.Reason,
+			event.Source.Host,
+		)
+	case "Info":
+		counter, err = kubernetesInfoEventCounterVec.GetMetricWithLabelValues(
+			event.InvolvedObject.Kind,
+			event.InvolvedObject.Name,
+			event.InvolvedObject.Namespace,
+			event.Reason,
+			event.Source.Host,
+		)
+	default:
+		counter, err = kubernetesUnknownEventCounterVec.GetMetricWithLabelValues(
 			event.InvolvedObject.Kind,
 			event.InvolvedObject.Name,
 			event.InvolvedObject.Namespace,
