@@ -3,6 +3,7 @@ module github.com/heptiolabs/eventrouter
 go 1.12
 
 require (
+	github.com/Azure/azure-event-hubs-go/v2 v2.0.3
 	github.com/Shopify/sarama v1.23.1
 	github.com/aws/aws-sdk-go v1.23.2
 	github.com/crewjam/rfc5424 v0.0.0-20180723152949-c25bdd3a0ba2
