@@ -55,13 +55,6 @@ var (
 	})
 )
 
-func init() {
-	if viper.GetBool("enable-prometheus") {
-		prometheus.MustRegister(kubernetesWarningEventCounterVec)
-		prometheus.MustRegister(kubernetesNormalEventCounterVec)
-	}
-}
-
 // EventRouter is responsible for maintaining a stream of kubernetes
 // system Events and pushing them to another channel for storage
 type EventRouter struct {
@@ -81,6 +74,11 @@ type EventRouter struct {
 
 // NewEventRouter will create a new event router using the input params
 func NewEventRouter(kubeClient kubernetes.Interface, eventsInformer coreinformers.EventInformer) *EventRouter {
+	if viper.GetBool("enable-prometheus") {
+		prometheus.MustRegister(kubernetesWarningEventCounterVec)
+		prometheus.MustRegister(kubernetesNormalEventCounterVec)
+	}
+
 	er := &EventRouter{
 		kubeClient: kubeClient,
 		eSink:      sinks.ManufactureSink(),
