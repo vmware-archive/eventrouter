@@ -22,6 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/heptiolabs/eventrouter/sinks"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 
 	v1 "k8s.io/api/core/v1"
@@ -90,10 +91,14 @@ type EventRouter struct {
 	// event sink
 	// TODO: Determine if we want to support multiple sinks.
 	eSink sinks.EventSinkInterface
+
+	lastSeenResourceVersion     string
+	lastResourceVersionPosition func(string)
 }
 
 // NewEventRouter will create a new event router using the input params
-func NewEventRouter(kubeClient kubernetes.Interface, eventsInformer coreinformers.EventInformer) *EventRouter {
+func NewEventRouter(kubeClient kubernetes.Interface, eventsInformer coreinformers.EventInformer,
+	lastSeenResourceVersion string, lastResourceVersionPosition func(rv string)) *EventRouter {
 	if viper.GetBool("enable-prometheus") {
 		prometheus.MustRegister(kubernetesWarningEventCounterVec)
 		prometheus.MustRegister(kubernetesNormalEventCounterVec)
@@ -102,8 +107,10 @@ func NewEventRouter(kubeClient kubernetes.Interface, eventsInformer coreinformer
 	}
 
 	er := &EventRouter{
-		kubeClient: kubeClient,
-		eSink:      sinks.ManufactureSink(),
+		kubeClient:                  kubeClient,
+		eSink:                       sinks.ManufactureSink(),
+		lastSeenResourceVersion:     lastSeenResourceVersion,
+		lastResourceVersionPosition: lastResourceVersionPosition,
 	}
 	eventsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    er.addEvent,
@@ -133,16 +140,26 @@ func (er *EventRouter) Run(stopCh <-chan struct{}) {
 // addEvent is called when an event is created, or during the initial list
 func (er *EventRouter) addEvent(obj interface{}) {
 	e := obj.(*v1.Event)
-	prometheusEvent(e)
-	er.eSink.UpdateEvents(e, nil)
+	if cast.ToInt(er.lastSeenResourceVersion) < cast.ToInt(e.ResourceVersion) {
+		prometheusEvent(e)
+		er.eSink.UpdateEvents(e, nil)
+		er.lastResourceVersionPosition(e.ResourceVersion)
+	} else {
+		glog.V(5).Infof("Event had already been processed:\n%v", e)
+	}
 }
 
 // updateEvent is called any time there is an update to an existing event
 func (er *EventRouter) updateEvent(objOld interface{}, objNew interface{}) {
 	eOld := objOld.(*v1.Event)
 	eNew := objNew.(*v1.Event)
-	prometheusEvent(eNew)
-	er.eSink.UpdateEvents(eNew, eOld)
+	if cast.ToInt(er.lastSeenResourceVersion) < cast.ToInt(eNew.ResourceVersion) {
+		prometheusEvent(eNew)
+		er.eSink.UpdateEvents(eNew, eOld)
+		er.lastResourceVersionPosition(eNew.ResourceVersion)
+	} else {
+		glog.V(5).Infof("Event had already been processed:\n%v", eNew)
+	}
 }
 
 // prometheusEvent is called when an event is added or updated
