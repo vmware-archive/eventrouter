@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -27,6 +28,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 
 	"k8s.io/client-go/informers"
@@ -49,7 +51,7 @@ func sigHandler() <-chan struct{} {
 			syscall.SIGSEGV, // FullDerp
 			syscall.SIGABRT, // Abnormal termination
 			syscall.SIGILL,  // illegal instruction
-			syscall.SIGFPE)  // floating point - this is why we can't have nice things
+			syscall.SIGFPE) // floating point - this is why we can't have nice things
 		sig := <-c
 		glog.Warningf("Signal (%v) Detected, Shutting Down", sig)
 		close(stop)
@@ -107,11 +109,41 @@ func main() {
 	var wg sync.WaitGroup
 
 	clientset := loadConfig()
+
+	var lastResourceVersionPosition string
+	var mostRecentResourceVersion *string
+
+	resourceVersionPositionPath := viper.GetString("lastResourceVersionPositionPath")
+	resourceVersionPositionFunc := func(resourceVersion string) {
+		if resourceVersionPositionPath != "" {
+			if cast.ToInt(resourceVersion) > cast.ToInt(mostRecentResourceVersion) {
+				err := ioutil.WriteFile(resourceVersionPositionPath, []byte(resourceVersion), 0644)
+				if err != nil {
+					glog.Errorf("failed to write lastResourceVersionPosition")
+				} else {
+					mostRecentResourceVersion = &resourceVersion
+				}
+			}
+		}
+	}
+
+	if resourceVersionPositionPath != "" {
+		_, err := os.Stat(resourceVersionPositionPath)
+		if !os.IsNotExist(err) {
+			resourceVersionBytes, err := ioutil.ReadFile(resourceVersionPositionPath)
+			if err != nil {
+				glog.Errorf("failed to read resource version bookmark from %s", resourceVersionPositionPath)
+			} else {
+				lastResourceVersionPosition = string(resourceVersionBytes)
+			}
+		}
+	}
+
 	sharedInformers := informers.NewSharedInformerFactory(clientset, viper.GetDuration("resync-interval"))
 	eventsInformer := sharedInformers.Core().V1().Events()
 
 	// TODO: Support locking for HA https://github.com/kubernetes/kubernetes/pull/42666
-	eventRouter := NewEventRouter(clientset, eventsInformer)
+	eventRouter := NewEventRouter(clientset, eventsInformer, lastResourceVersionPosition, resourceVersionPositionFunc)
 	stop := sigHandler()
 
 	// Startup the http listener for Prometheus Metrics endpoint.

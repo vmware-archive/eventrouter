@@ -17,10 +17,12 @@ require (
 	github.com/prometheus/client_golang v1.1.0
 	github.com/rockset/rockset-go-client v0.6.0
 	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0
+	github.com/spf13/cast v1.3.0
 	github.com/spf13/viper v1.4.0
 	gopkg.in/jcmturner/goidentity.v3 v3.0.0 // indirect
 	k8s.io/api v0.0.0-20190814101207-0772a1bdf941
 	k8s.io/apimachinery v0.0.0-20190814100815-533d101be9a6
 	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/klog v0.4.0
 	k8s.io/utils v0.0.0-20190809000727-6c36bc71fc4a // indirect
 )
