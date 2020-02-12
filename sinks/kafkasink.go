@@ -17,7 +17,10 @@ limitations under the License.
 package sinks
 
 import (
+	"fmt"
+
 	"encoding/json"
+
 	"github.com/Shopify/sarama"
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
@@ -29,10 +32,21 @@ type KafkaSink struct {
 	producer interface{}
 }
 
-// NewKafkaSinkSink will create a new KafkaSink with default options, returned as an EventSinkInterface
-func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, saslUser string, saslPwd string) (EventSinkInterface, error) {
+var (
+	kafkaSASLMechanisms = map[sarama.SASLMechanism]func() sarama.SCRAMClient {
+		sarama.SASLTypeSCRAMSHA256: func() sarama.SCRAMClient {
+			return &XDGSCRAMClient{HashGeneratorFcn: scramSHA256}
+		},
+		sarama.SASLTypeSCRAMSHA512: func() sarama.SCRAMClient {
+			return &XDGSCRAMClient{HashGeneratorFcn: scramSHA512}
+		},
+	}
+)
 
-	p, err := sinkFactory(brokers, async, retryMax, saslUser, saslPwd)
+// NewKafkaSinkSink will create a new KafkaSink with default options, returned as an EventSinkInterface
+func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, saslUser, saslPwd, saslMechanism string) (EventSinkInterface, error) {
+
+	p, err := sinkFactory(brokers, async, retryMax, saslUser, saslPwd, saslMechanism)
 
 	if err != nil {
 		return nil, err
@@ -44,7 +58,7 @@ func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, sasl
 	}, err
 }
 
-func sinkFactory(brokers []string, async bool, retryMax int, saslUser string, saslPwd string) (interface{}, error) {
+func sinkFactory(brokers []string, async bool, retryMax int, saslUser, saslPwd, saslMechanism string) (interface{}, error) {
 	config := sarama.NewConfig()
 	config.Producer.Retry.Max = retryMax
 	config.Producer.RequiredAcks = sarama.WaitForAll
@@ -53,6 +67,17 @@ func sinkFactory(brokers []string, async bool, retryMax int, saslUser string, sa
 		config.Net.SASL.Enable = true
 		config.Net.SASL.User = saslUser
 		config.Net.SASL.Password = saslPwd
+
+		if saslMechanism != "" {
+			mechanism := sarama.SASLMechanism(saslMechanism)
+			generatorFunc, ok := kafkaSASLMechanisms[mechanism]
+			if !ok {
+				return nil, fmt.Errorf("unknown SASL mechanism name: %q", saslMechanism)
+			}
+
+			config.Net.SASL.Mechanism = mechanism
+			config.Net.SASL.SCRAMClientGeneratorFunc = generatorFunc
+		}
 	}
 
 	if async {
