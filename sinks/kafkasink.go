@@ -17,9 +17,13 @@ limitations under the License.
 package sinks
 
 import (
+	"errors"
 	"fmt"
 
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"io/ioutil"
 
 	"github.com/Shopify/sarama"
 	"github.com/golang/glog"
@@ -32,7 +36,15 @@ type KafkaSink struct {
 	producer interface{}
 }
 
+type kafkaTLSConfig struct {
+	CertFile 	string
+	KeyFile  	string
+	CACertFiles	[]string
+}
+
 var (
+	errMissingCertOrKeyFile = errors.New("one of certificate file or key file for client authentication missing")
+
 	kafkaSASLMechanisms = map[sarama.SASLMechanism]func() sarama.SCRAMClient {
 		sarama.SASLTypeSCRAMSHA256: func() sarama.SCRAMClient {
 			return &XDGSCRAMClient{HashGeneratorFcn: scramSHA256}
@@ -46,7 +58,7 @@ var (
 // NewKafkaSinkSink will create a new KafkaSink with default options, returned as an EventSinkInterface
 func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, saslUser, saslPwd, saslMechanism string) (EventSinkInterface, error) {
 
-	p, err := sinkFactory(brokers, async, retryMax, saslUser, saslPwd, saslMechanism)
+	p, err := sinkFactory(brokers, async, retryMax, saslUser, saslPwd, saslMechanism, nil)
 
 	if err != nil {
 		return nil, err
@@ -58,7 +70,7 @@ func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, sasl
 	}, err
 }
 
-func sinkFactory(brokers []string, async bool, retryMax int, saslUser, saslPwd, saslMechanism string) (interface{}, error) {
+func sinkFactory(brokers []string, async bool, retryMax int, saslUser, saslPwd, saslMechanism string, ktlsConfig *kafkaTLSConfig) (interface{}, error) {
 	config := sarama.NewConfig()
 	config.Producer.Retry.Max = retryMax
 	config.Producer.RequiredAcks = sarama.WaitForAll
@@ -78,6 +90,15 @@ func sinkFactory(brokers []string, async bool, retryMax int, saslUser, saslPwd, 
 			config.Net.SASL.Mechanism = mechanism
 			config.Net.SASL.SCRAMClientGeneratorFunc = generatorFunc
 		}
+	}
+
+	if ktlsConfig != nil {
+		tlsConfig, err := ktlsConfig.AsTLSConfig()
+		if err != nil {
+			return nil, err
+		}
+		config.Net.TLS.Enable = true
+		config.Net.TLS.Config = tlsConfig
 	}
 
 	if async {
@@ -124,4 +145,42 @@ func (ks *KafkaSink) UpdateEvents(eNew *v1.Event, eOld *v1.Event) {
 		glog.Errorf("Unhandled producer type: %s", p)
 	}
 
+}
+
+func (c *kafkaTLSConfig) AsTLSConfig() (*tls.Config, error) {
+	var certs []tls.Certificate
+	var certPool *x509.CertPool
+
+	if c.CertFile != "" && c.KeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(c.CertFile, c.KeyFile)
+		if err != nil {
+			return nil, err
+		}
+
+		certs = []tls.Certificate{cert}
+	} else if c.CertFile != "" || c.KeyFile != "" {
+		return nil, errMissingCertOrKeyFile
+	}
+
+	for _, caCertFile := range c.CACertFiles {
+		caCert, err := ioutil.ReadFile(caCertFile)
+		if err != nil {
+			return nil, err
+		}
+
+		if certPool == nil {
+			certPool = x509.NewCertPool()
+		}
+		certPool.AppendCertsFromPEM(caCert)
+	}
+
+	cfg := tls.Config{}
+	if certs != nil {
+		cfg.Certificates = certs
+	}
+	if certPool != nil {
+		cfg.RootCAs = certPool
+	}
+
+	return &cfg, nil
 }
