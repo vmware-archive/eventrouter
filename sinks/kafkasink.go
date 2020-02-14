@@ -36,6 +36,20 @@ type KafkaSink struct {
 	producer interface{}
 }
 
+type kafkaConfig struct {
+	Brokers  []string
+	Async	 bool
+	RetryMax int
+	SASL  	 kafkaSASLConfig
+	TLS 	 *kafkaTLSConfig
+}
+
+type kafkaSASLConfig struct {
+	Username  string
+	Password  string
+	Mechanism string
+}
+
 type kafkaTLSConfig struct {
 	CertFile 	string
 	KeyFile  	string
