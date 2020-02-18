@@ -72,7 +72,16 @@ var (
 // NewKafkaSinkSink will create a new KafkaSink with default options, returned as an EventSinkInterface
 func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, saslUser, saslPwd, saslMechanism string) (EventSinkInterface, error) {
 
-	p, err := sinkFactory(brokers, async, retryMax, saslUser, saslPwd, saslMechanism, nil)
+	p, err := sinkFactory(&kafkaConfig{
+		Brokers:  brokers,
+		Async:    async,
+		RetryMax: retryMax,
+		SASL:     kafkaSASLConfig{
+			Username:  saslUser,
+			Password:  saslPwd,
+			Mechanism: saslMechanism,
+		},
+	})
 
 	if err != nil {
 		return nil, err
@@ -84,21 +93,21 @@ func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, sasl
 	}, err
 }
 
-func sinkFactory(brokers []string, async bool, retryMax int, saslUser, saslPwd, saslMechanism string, ktlsConfig *kafkaTLSConfig) (interface{}, error) {
+func sinkFactory(cfg *kafkaConfig) (interface{}, error) {
 	config := sarama.NewConfig()
-	config.Producer.Retry.Max = retryMax
+	config.Producer.Retry.Max = cfg.RetryMax
 	config.Producer.RequiredAcks = sarama.WaitForAll
 
-	if saslUser != "" && saslPwd != "" {
+	if cfg.SASL.Username != "" && cfg.SASL.Password != "" {
 		config.Net.SASL.Enable = true
-		config.Net.SASL.User = saslUser
-		config.Net.SASL.Password = saslPwd
+		config.Net.SASL.User = cfg.SASL.Username
+		config.Net.SASL.Password = cfg.SASL.Password
 
-		if saslMechanism != "" {
-			mechanism := sarama.SASLMechanism(saslMechanism)
+		if cfg.SASL.Mechanism != "" {
+			mechanism := sarama.SASLMechanism(cfg.SASL.Mechanism)
 			generatorFunc, ok := kafkaSASLMechanisms[mechanism]
 			if !ok {
-				return nil, fmt.Errorf("unknown SASL mechanism name: %q", saslMechanism)
+				return nil, fmt.Errorf("unknown SASL mechanism name: %q", cfg.SASL.Mechanism)
 			}
 
 			config.Net.SASL.Mechanism = mechanism
@@ -106,8 +115,8 @@ func sinkFactory(brokers []string, async bool, retryMax int, saslUser, saslPwd, 
 		}
 	}
 
-	if ktlsConfig != nil {
-		tlsConfig, err := ktlsConfig.AsTLSConfig()
+	if cfg.TLS != nil {
+		tlsConfig, err := cfg.TLS.AsTLSConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -115,12 +124,12 @@ func sinkFactory(brokers []string, async bool, retryMax int, saslUser, saslPwd, 
 		config.Net.TLS.Config = tlsConfig
 	}
 
-	if async {
-		return sarama.NewAsyncProducer(brokers, config)
+	if cfg.Async {
+		return sarama.NewAsyncProducer(cfg.Brokers, config)
 	}
 
 	config.Producer.Return.Successes = true
-	return sarama.NewSyncProducer(brokers, config)
+	return sarama.NewSyncProducer(cfg.Brokers, config)
 
 }
 
