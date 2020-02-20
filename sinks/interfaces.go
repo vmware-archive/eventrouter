@@ -41,6 +41,33 @@ func ManufactureSink() (e EventSinkInterface) {
 		viper.SetDefault("stdoutJSONNamespace", "")
 		stdoutNamespace := viper.GetString("stdoutJSONNamespace")
 		e = NewStdoutSink(stdoutNamespace)
+	case "syslog":
+		url := viper.GetString("SyslogSinkEndpoint")
+		if url == "" {
+			panic("syslog sink specified but no SyslogSinkEndpoint")
+		}
+		port := viper.GetInt("SyslogSinkPort")
+		if url == "" {
+			panic("syslog sink specified but no SyslogSinkPort")
+		}
+		protocol := viper.GetString("SyslogSinkProtocol")
+		if url == "" {
+			panic("syslog sink specified but no SyslogSinkProtocol")
+		}
+
+		// By default we buffer up to 1500 events, and drop messages if more than
+		// 1500 have come in without getting consumed
+		viper.SetDefault("syslogSinkBufferSize", 1500)
+		viper.SetDefault("syslogSinkDiscardMessages", true)
+		viper.SetDefault("syslogSinkTag", "k8s-events")
+
+		bufferSize := viper.GetInt("syslogSinkBufferSize")
+		overflow := viper.GetBool("syslogSinkDiscardMessages")
+		tag := viper.GetString("syslogSinkTag")
+
+		s := NewSyslogSink(url, port, protocol, overflow, bufferSize, tag)
+		go s.Run(make(chan bool))
+		return s
 	case "http":
 		url := viper.GetString("httpSinkUrl")
 		if url == "" {
