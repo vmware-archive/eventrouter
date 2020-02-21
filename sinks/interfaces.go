@@ -67,15 +67,28 @@ func ManufactureSink() (e EventSinkInterface) {
 		viper.SetDefault("kafkaSaslPwd", "")
 		viper.SetDefault("kafkaSaslMechanism", "")
 
-		brokers := viper.GetStringSlice("kafkaBrokers")
-		topic := viper.GetString("kafkaTopic")
-		async := viper.GetBool("kakfkaAsync")
-		retryMax := viper.GetInt("kafkaRetryMax")
-		saslUser := viper.GetString("kafkaSaslUser")
-		saslPwd := viper.GetString("kafkaSaslPwd")
-		saslMechanism := viper.GetString("kafkaSaslMechanism")
+		var tlsCfg *kafkaTLSConfig
+		if viper.IsSet("kafkaTLS") {
+			tlsCfg = &kafkaTLSConfig{}
+			if err := viper.UnmarshalKey("kafkaTLS", tlsCfg); err != nil {
+				panic(err.Error())
+			}
+		}
 
-		e, err := NewKafkaSink(brokers, topic, async, retryMax, saslUser, saslPwd, saslMechanism)
+		cfg := kafkaConfig{
+			Brokers:  viper.GetStringSlice("kafkaBrokers"),
+			Async:    viper.GetBool("kafkaAsync"),
+			RetryMax: viper.GetInt("kafkaRetryMax"),
+			SASL:     kafkaSASLConfig{
+				Username:  viper.GetString("kafkaSaslUser"),
+				Password:  viper.GetString("kafkaSaslPwd"),
+				Mechanism: viper.GetString("kafkaSaslMechanism"),
+			},
+			TLS:      tlsCfg,
+		}
+		topic := viper.GetString("kafkaTopic")
+
+		e, err := NewKafkaSink(cfg, topic)
 		if err != nil {
 			panic(err.Error())
 		}

@@ -70,18 +70,9 @@ var (
 )
 
 // NewKafkaSinkSink will create a new KafkaSink with default options, returned as an EventSinkInterface
-func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, saslUser, saslPwd, saslMechanism string) (EventSinkInterface, error) {
+func NewKafkaSink(cfg kafkaConfig, topic string) (EventSinkInterface, error) {
 
-	p, err := sinkFactory(&kafkaConfig{
-		Brokers:  brokers,
-		Async:    async,
-		RetryMax: retryMax,
-		SASL:     kafkaSASLConfig{
-			Username:  saslUser,
-			Password:  saslPwd,
-			Mechanism: saslMechanism,
-		},
-	})
+	p, err := sinkFactory(&cfg)
 
 	if err != nil {
 		return nil, err
