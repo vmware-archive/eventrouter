@@ -18,6 +18,7 @@ require (
 	github.com/rockset/rockset-go-client v0.6.0
 	github.com/sethgrid/pester v0.0.0-20190127155807-68a33a018ad0
 	github.com/spf13/viper v1.4.0
+	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c
 	gopkg.in/jcmturner/goidentity.v3 v3.0.0 // indirect
 	k8s.io/api v0.0.0-20190814101207-0772a1bdf941
 	k8s.io/apimachinery v0.0.0-20190814100815-533d101be9a6

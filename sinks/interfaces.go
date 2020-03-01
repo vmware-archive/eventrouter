@@ -65,15 +65,30 @@ func ManufactureSink() (e EventSinkInterface) {
 		viper.SetDefault("kafkaRetryMax", 5)
 		viper.SetDefault("kafkaSaslUser", "")
 		viper.SetDefault("kafkaSaslPwd", "")
+		viper.SetDefault("kafkaSaslMechanism", "")
 
-		brokers := viper.GetStringSlice("kafkaBrokers")
+		var tlsCfg *kafkaTLSConfig
+		if viper.IsSet("kafkaTLS") {
+			tlsCfg = &kafkaTLSConfig{}
+			if err := viper.UnmarshalKey("kafkaTLS", tlsCfg); err != nil {
+				panic(err.Error())
+			}
+		}
+
+		cfg := kafkaConfig{
+			Brokers:  viper.GetStringSlice("kafkaBrokers"),
+			Async:    viper.GetBool("kafkaAsync"),
+			RetryMax: viper.GetInt("kafkaRetryMax"),
+			SASL:     kafkaSASLConfig{
+				Username:  viper.GetString("kafkaSaslUser"),
+				Password:  viper.GetString("kafkaSaslPwd"),
+				Mechanism: viper.GetString("kafkaSaslMechanism"),
+			},
+			TLS:      tlsCfg,
+		}
 		topic := viper.GetString("kafkaTopic")
-		async := viper.GetBool("kakfkaAsync")
-		retryMax := viper.GetInt("kafkaRetryMax")
-		saslUser := viper.GetString("kafkaSaslUser")
-		saslPwd := viper.GetString("kafkaSaslPwd")
 
-		e, err := NewKafkaSink(brokers, topic, async, retryMax, saslUser, saslPwd)
+		e, err := NewKafkaSink(cfg, topic)
 		if err != nil {
 			panic(err.Error())
 		}

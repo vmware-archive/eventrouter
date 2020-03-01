@@ -17,7 +17,14 @@ limitations under the License.
 package sinks
 
 import (
+	"errors"
+	"fmt"
+
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"io/ioutil"
+
 	"github.com/Shopify/sarama"
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
@@ -29,10 +36,43 @@ type KafkaSink struct {
 	producer interface{}
 }
 
-// NewKafkaSinkSink will create a new KafkaSink with default options, returned as an EventSinkInterface
-func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, saslUser string, saslPwd string) (EventSinkInterface, error) {
+type kafkaConfig struct {
+	Brokers  []string
+	Async	 bool
+	RetryMax int
+	SASL  	 kafkaSASLConfig
+	TLS 	 *kafkaTLSConfig
+}
 
-	p, err := sinkFactory(brokers, async, retryMax, saslUser, saslPwd)
+type kafkaSASLConfig struct {
+	Username  string
+	Password  string
+	Mechanism string
+}
+
+type kafkaTLSConfig struct {
+	CertFile 	string
+	KeyFile  	string
+	CACertFiles	[]string
+}
+
+var (
+	errMissingCertOrKeyFile = errors.New("one of certificate file or key file for client authentication missing")
+
+	kafkaSASLMechanisms = map[sarama.SASLMechanism]func() sarama.SCRAMClient {
+		sarama.SASLTypeSCRAMSHA256: func() sarama.SCRAMClient {
+			return &XDGSCRAMClient{HashGeneratorFcn: scramSHA256}
+		},
+		sarama.SASLTypeSCRAMSHA512: func() sarama.SCRAMClient {
+			return &XDGSCRAMClient{HashGeneratorFcn: scramSHA512}
+		},
+	}
+)
+
+// NewKafkaSinkSink will create a new KafkaSink with default options, returned as an EventSinkInterface
+func NewKafkaSink(cfg kafkaConfig, topic string) (EventSinkInterface, error) {
+
+	p, err := sinkFactory(&cfg)
 
 	if err != nil {
 		return nil, err
@@ -44,23 +84,43 @@ func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, sasl
 	}, err
 }
 
-func sinkFactory(brokers []string, async bool, retryMax int, saslUser string, saslPwd string) (interface{}, error) {
+func sinkFactory(cfg *kafkaConfig) (interface{}, error) {
 	config := sarama.NewConfig()
-	config.Producer.Retry.Max = retryMax
+	config.Producer.Retry.Max = cfg.RetryMax
 	config.Producer.RequiredAcks = sarama.WaitForAll
 
-	if saslUser != "" && saslPwd != "" {
+	if cfg.SASL.Username != "" && cfg.SASL.Password != "" {
 		config.Net.SASL.Enable = true
-		config.Net.SASL.User = saslUser
-		config.Net.SASL.Password = saslPwd
+		config.Net.SASL.User = cfg.SASL.Username
+		config.Net.SASL.Password = cfg.SASL.Password
+
+		if cfg.SASL.Mechanism != "" {
+			mechanism := sarama.SASLMechanism(cfg.SASL.Mechanism)
+			generatorFunc, ok := kafkaSASLMechanisms[mechanism]
+			if !ok {
+				return nil, fmt.Errorf("unknown SASL mechanism name: %q", cfg.SASL.Mechanism)
+			}
+
+			config.Net.SASL.Mechanism = mechanism
+			config.Net.SASL.SCRAMClientGeneratorFunc = generatorFunc
+		}
 	}
 
-	if async {
-		return sarama.NewAsyncProducer(brokers, config)
+	if cfg.TLS != nil {
+		tlsConfig, err := cfg.TLS.AsTLSConfig()
+		if err != nil {
+			return nil, err
+		}
+		config.Net.TLS.Enable = true
+		config.Net.TLS.Config = tlsConfig
+	}
+
+	if cfg.Async {
+		return sarama.NewAsyncProducer(cfg.Brokers, config)
 	}
 
 	config.Producer.Return.Successes = true
-	return sarama.NewSyncProducer(brokers, config)
+	return sarama.NewSyncProducer(cfg.Brokers, config)
 
 }
 
@@ -99,4 +159,42 @@ func (ks *KafkaSink) UpdateEvents(eNew *v1.Event, eOld *v1.Event) {
 		glog.Errorf("Unhandled producer type: %s", p)
 	}
 
+}
+
+func (c *kafkaTLSConfig) AsTLSConfig() (*tls.Config, error) {
+	var certs []tls.Certificate
+	var certPool *x509.CertPool
+
+	if c.CertFile != "" && c.KeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(c.CertFile, c.KeyFile)
+		if err != nil {
+			return nil, err
+		}
+
+		certs = []tls.Certificate{cert}
+	} else if c.CertFile != "" || c.KeyFile != "" {
+		return nil, errMissingCertOrKeyFile
+	}
+
+	for _, caCertFile := range c.CACertFiles {
+		caCert, err := ioutil.ReadFile(caCertFile)
+		if err != nil {
+			return nil, err
+		}
+
+		if certPool == nil {
+			certPool = x509.NewCertPool()
+		}
+		certPool.AppendCertsFromPEM(caCert)
+	}
+
+	cfg := tls.Config{}
+	if certs != nil {
+		cfg.Certificates = certs
+	}
+	if certPool != nil {
+		cfg.RootCAs = certPool
+	}
+
+	return &cfg, nil
 }
