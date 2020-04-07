@@ -43,7 +43,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	kSink, err := sinks.NewKafkaSink(k.Brokers, k.Topic, k.Async, k.RetryMax, "user", "password")
+	kSink, err := sinks.NewKafkaSink(k.Brokers, k.Topic, k.Async, k.RetryMax, "", "")
 	if err != nil {
 		log.Fatal(err)
 	}
