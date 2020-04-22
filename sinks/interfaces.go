@@ -104,6 +104,8 @@ func ManufactureSink() (e EventSinkInterface) {
 			panic("s3 sink specified but s3SinkBucketDir not specified")
 		}
 
+		endpoint := viper.GetString("s3SinkEndpoint")
+
 		// By default the json is pushed to s3 in not flatenned rfc5424 write format
 		// The option to write to s3 is in the flattened json format which will help in
 		// using the data in redshift with least effort
@@ -124,7 +126,7 @@ func ManufactureSink() (e EventSinkInterface) {
 		bufferSize := viper.GetInt("s3SinkBufferSize")
 		overflow := viper.GetBool("s3SinkDiscardMessages")
 
-		s, err := NewS3Sink(accessKeyID, secretAccessKey, region, bucket, bucketDir, uploadInterval, overflow, bufferSize, outputFormat)
+		s, err := NewS3Sink(accessKeyID, secretAccessKey, region, bucket, bucketDir, uploadInterval, overflow, bufferSize, outputFormat, endpoint)
 		if err != nil {
 			panic(err.Error())
 		}
