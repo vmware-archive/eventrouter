@@ -54,10 +54,14 @@ type S3Sink struct {
 }
 
 // NewS3Sink is the factory method constructing a new S3Sink
-func NewS3Sink(awsAccessKeyID string, s3SinkSecretAccessKey string, s3SinkRegion string, s3SinkBucket string, s3SinkBucketDir string, s3SinkUploadInterval int, overflow bool, bufferSize int, outputFormat string) (*S3Sink, error) {
+func NewS3Sink(awsAccessKeyID string, s3SinkSecretAccessKey string, s3SinkRegion string, s3SinkBucket string, s3SinkBucketDir string, s3SinkUploadInterval int, overflow bool, bufferSize int, outputFormat string, s3SinkEndpoint string) (*S3Sink, error) {
 	awsConfig := &aws.Config{
 		Region:      aws.String(s3SinkRegion),
 		Credentials: credentials.NewStaticCredentials(awsAccessKeyID, s3SinkSecretAccessKey, ""),
+	}
+
+	if s3SinkEndpoint != "" {
+		awsConfig = awsConfig.WithEndpoint(s3SinkEndpoint)
 	}
 
 	awsConfig = awsConfig.WithCredentialsChainVerboseErrors(true)
