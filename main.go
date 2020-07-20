@@ -74,16 +74,18 @@ func loadConfig() kubernetes.Interface {
 	viper.SetDefault("sink", "glog")
 	viper.SetDefault("resync-interval", time.Minute*30)
 	viper.SetDefault("enable-prometheus", true)
-	if err = viper.ReadInConfig(); err != nil {
-		panic(err.Error())
-	}
-
-	viper.BindEnv("kubeconfig") // Allows the KUBECONFIG env var to override where the kubeconfig is
 
 	// Allow specifying a custom config file via the EVENTROUTER_CONFIG env var
 	if forceCfg := os.Getenv("EVENTROUTER_CONFIG"); forceCfg != "" {
 		viper.SetConfigFile(forceCfg)
 	}
+
+	if err = viper.ReadInConfig(); err != nil {
+		glog.Info(err.Error())
+	}
+
+	viper.BindEnv("kubeconfig") // Allows the KUBECONFIG env var to override where the kubeconfig is
+
 	kubeconfig := viper.GetString("kubeconfig")
 	if len(kubeconfig) > 0 {
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
