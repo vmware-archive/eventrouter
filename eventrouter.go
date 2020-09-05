@@ -18,7 +18,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/golang/glog"
 	"github.com/heptiolabs/eventrouter/sinks"
 	"github.com/prometheus/client_golang/prometheus"
@@ -30,6 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog"
 )
 
 var (
@@ -134,6 +138,7 @@ func (er *EventRouter) Run(stopCh <-chan struct{}) {
 func (er *EventRouter) addEvent(obj interface{}) {
 	e := obj.(*v1.Event)
 	prometheusEvent(e)
+	cloudwatchEvent(e)
 	er.eSink.UpdateEvents(e, nil)
 }
 
@@ -142,6 +147,7 @@ func (er *EventRouter) updateEvent(objOld interface{}, objNew interface{}) {
 	eOld := objOld.(*v1.Event)
 	eNew := objNew.(*v1.Event)
 	prometheusEvent(eNew)
+	cloudwatchEvent(eNew)
 	er.eSink.UpdateEvents(eNew, eOld)
 }
 
@@ -202,4 +208,93 @@ func (er *EventRouter) deleteEvent(obj interface{}) {
 	// NOTE: This should *only* happen on TTL expiration there
 	// is no reason to push this to a sink
 	glog.V(5).Infof("Event Deleted from the system:\n%v", e)
+}
+
+func cloudwatchEvent(event *v1.Event) {
+	var err error
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	switch event.Type {
+	case "Normal":
+		putAwsMetricData(sess, "heptio_eventrouter_normal_total", "Count", 1, event)
+	case "Warning":
+		putAwsMetricData(sess, "heptio_eventrouter_warnings_total", "Count", 1, event)
+	case "Info":
+		putAwsMetricData(sess, "heptio_eventrouter_info_total", "Count", 1, event)
+	default:
+		putAwsMetricData(sess, "heptio_eventrouter_unknown_total", "Count", 1, event)
+	}
+
+	if err != nil {
+		// Not sure this is the right place to log this error?
+		glog.Warning(err)
+	} else {
+		//counter.Add(1)
+	}
+}
+
+func putAwsMetricData(sess *session.Session, metricName string, unit string, value float64, event *v1.Event) error {
+	// Create new Amazon CloudWatch client
+	// snippet-start:[cloudwatch.go.create_custom_metric.call]
+	dimension1 := "ClusterName"
+	dimension2 := "involved_object_kind"
+	dimension3 := "involved_object_name"
+	dimension4 := "involved_object_namespace"
+	dimension5 := "reason"
+	dimension6 := "source"
+	svc := cloudwatch.New(sess)
+	namespace := os.Getenv("AWS_CLOUDWATCH_METRIC_NAMESPACE")
+	clusterName := os.Getenv("CLUSTER_NAME")
+
+	if namespace == "" || clusterName == "" {
+		fmt.Println("You must supply a namespace and clusterName values")
+	}
+
+	klog.V(0).Infof("Putting new AWS metric: Namespace %v, Metric %v", namespace, metricName)
+
+	_, err := svc.PutMetricData(&cloudwatch.PutMetricDataInput{
+		Namespace: &namespace,
+		MetricData: []*cloudwatch.MetricDatum{
+			&cloudwatch.MetricDatum{
+				MetricName: &metricName,
+				Unit:       &unit,
+				Value:      &value,
+				Dimensions: []*cloudwatch.Dimension{
+					&cloudwatch.Dimension{
+						Name:  &dimension1,
+						Value: &clusterName,
+					},
+					&cloudwatch.Dimension{
+						Name:  &dimension2,
+						Value: &event.InvolvedObject.Kind,
+					},
+					&cloudwatch.Dimension{
+						Name:  &dimension3,
+						Value: &event.InvolvedObject.Name,
+					},
+					&cloudwatch.Dimension{
+						Name:  &dimension4,
+						Value: &event.InvolvedObject.Namespace,
+					},
+					&cloudwatch.Dimension{
+						Name:  &dimension5,
+						Value: &event.Reason,
+					},
+					&cloudwatch.Dimension{
+						Name:  &dimension6,
+						Value: &event.Source.Host,
+					},
+				},
+			},
+		},
+	})
+	// snippet-end:[cloudwatch.go.create_custom_metric.call]
+	if err != nil {
+		klog.V(0).Infof("Error during putting metrics to CloudWatch: %v", err)
+		return err
+	}
+
+	return nil
 }

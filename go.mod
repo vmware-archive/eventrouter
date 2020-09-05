@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go v1.23.2
 	github.com/crewjam/rfc5424 v0.0.0-20180723152949-c25bdd3a0ba2
 	github.com/eapache/channels v1.1.0
+	github.com/go-delve/delve v1.5.0 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/influxdata/influxdb v1.7.7
@@ -22,5 +23,6 @@ require (
 	k8s.io/api v0.0.0-20190814101207-0772a1bdf941
 	k8s.io/apimachinery v0.0.0-20190814100815-533d101be9a6
 	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/klog v0.4.0
 	k8s.io/utils v0.0.0-20190809000727-6c36bc71fc4a // indirect
 )
