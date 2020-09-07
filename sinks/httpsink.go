@@ -23,8 +23,7 @@ import (
 	"github.com/eapache/channels"
 	"github.com/golang/glog"
 	"github.com/sethgrid/pester"
-
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 /*
@@ -156,6 +155,6 @@ func (h *HTTPSink) drainEvents(events []EventData) {
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		glog.Warningf("Got HTTP code %v from %v", resp.StatusCode, h.SinkURL)
+		glog.Warningf("Got HTTP code %v from %v with %v", resp.StatusCode, h.SinkURL, h.bodyBuf)
 	}
 }

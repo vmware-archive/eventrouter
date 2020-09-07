@@ -253,7 +253,7 @@ func putAwsMetricData(sess *session.Session, metricName string, unit string, val
 		fmt.Println("You must supply a namespace and clusterName values")
 	}
 
-	glog.Infof("Putting new AWS metric: Namespace %v, Metric %v", namespace, metricName)
+	glog.Infof("Putting new AWS metric: Namespace %v, Metric %v, Reason %v", namespace, metricName, event.Reason)
 
 	_, err := svc.PutMetricData(&cloudwatch.PutMetricDataInput{
 		Namespace: &namespace,
