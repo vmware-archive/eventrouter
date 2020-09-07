@@ -210,7 +210,6 @@ func (er *EventRouter) deleteEvent(obj interface{}) {
 }
 
 func cloudwatchEvent(event *v1.Event) {
-	glog.Infof("Add new event into CloudWatch")
 	var err error
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
