@@ -211,6 +211,7 @@ func (er *EventRouter) deleteEvent(obj interface{}) {
 }
 
 func cloudwatchEvent(event *v1.Event) {
+	glog.Infof("Add new event into CloudWatch")
 	var err error
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
@@ -252,7 +253,7 @@ func putAwsMetricData(sess *session.Session, metricName string, unit string, val
 		fmt.Println("You must supply a namespace and clusterName values")
 	}
 
-	klog.V(0).Infof("Putting new AWS metric: Namespace %v, Metric %v", namespace, metricName)
+	glog.Infof("Putting new AWS metric: Namespace %v, Metric %v", namespace, metricName)
 
 	_, err := svc.PutMetricData(&cloudwatch.PutMetricDataInput{
 		Namespace: &namespace,
