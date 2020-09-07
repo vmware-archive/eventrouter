@@ -33,7 +33,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog"
 )
 
 var (
@@ -293,7 +292,7 @@ func putAwsMetricData(sess *session.Session, metricName string, unit string, val
 	})
 	// snippet-end:[cloudwatch.go.create_custom_metric.call]
 	if err != nil {
-		klog.V(0).Infof("Error during putting metrics to CloudWatch: %v", err)
+		glog.Infof("Error during putting metrics to CloudWatch: %v", err)
 		return err
 	}
 
