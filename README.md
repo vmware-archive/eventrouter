@@ -11,6 +11,7 @@ This project has several objectives, which include:
 * Allows operators to forward events to other system(s) for archiving/ML/introspection/etc. 
 * It should be relatively low overhead
 * Support for multiple _sinks_ should be configurable
+* Allows to store metrics into CloudWatch
 
 ### NOTE:
 
