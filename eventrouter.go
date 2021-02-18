@@ -18,11 +18,11 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/golang/glog"
 	"github.com/heptiolabs/eventrouter/sinks"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/viper"
+	"k8s.io/klog"
 
 	v1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	kubernetesWarningEventCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
+	kubernetesWarningEventGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heptio_eventrouter_warnings_total",
 		Help: "Total number of warning events in the kubernetes cluster",
 	}, []string{
@@ -43,7 +43,7 @@ var (
 		"reason",
 		"source",
 	})
-	kubernetesNormalEventCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
+	kubernetesNormalEventGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heptio_eventrouter_normal_total",
 		Help: "Total number of normal events in the kubernetes cluster",
 	}, []string{
@@ -53,7 +53,7 @@ var (
 		"reason",
 		"source",
 	})
-	kubernetesInfoEventCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
+	kubernetesInfoEventGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heptio_eventrouter_info_total",
 		Help: "Total number of info events in the kubernetes cluster",
 	}, []string{
@@ -63,7 +63,7 @@ var (
 		"reason",
 		"source",
 	})
-	kubernetesUnknownEventCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
+	kubernetesUnknownEventGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heptio_eventrouter_unknown_total",
 		Help: "Total number of events of unknown type in the kubernetes cluster",
 	}, []string{
@@ -95,23 +95,26 @@ type EventRouter struct {
 // NewEventRouter will create a new event router using the input params
 func NewEventRouter(kubeClient kubernetes.Interface, eventsInformer coreinformers.EventInformer) *EventRouter {
 	if viper.GetBool("enable-prometheus") {
-		prometheus.MustRegister(kubernetesWarningEventCounterVec)
-		prometheus.MustRegister(kubernetesNormalEventCounterVec)
-		prometheus.MustRegister(kubernetesInfoEventCounterVec)
-		prometheus.MustRegister(kubernetesUnknownEventCounterVec)
+		prometheus.MustRegister(kubernetesWarningEventGaugeVec)
+		prometheus.MustRegister(kubernetesNormalEventGaugeVec)
+		prometheus.MustRegister(kubernetesInfoEventGaugeVec)
+		prometheus.MustRegister(kubernetesUnknownEventGaugeVec)
 	}
 
 	er := &EventRouter{
 		kubeClient: kubeClient,
 		eSink:      sinks.ManufactureSink(),
 	}
+	glog.Errorf("new event router")
 	eventsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    er.addEvent,
 		UpdateFunc: er.updateEvent,
 		DeleteFunc: er.deleteEvent,
 	})
-	er.eLister = eventsInformer.Lister()
+
+	//er.eLister = eventsInformer.Lister()
 	er.eListerSynched = eventsInformer.Informer().HasSynced
+	glog.Errorf("sync ok")
 	return er
 }
 
@@ -133,7 +136,7 @@ func (er *EventRouter) Run(stopCh <-chan struct{}) {
 // addEvent is called when an event is created, or during the initial list
 func (er *EventRouter) addEvent(obj interface{}) {
 	e := obj.(*v1.Event)
-	prometheusEvent(e)
+	prometheusEvent(e, false)
 	er.eSink.UpdateEvents(e, nil)
 }
 
@@ -141,21 +144,33 @@ func (er *EventRouter) addEvent(obj interface{}) {
 func (er *EventRouter) updateEvent(objOld interface{}, objNew interface{}) {
 	eOld := objOld.(*v1.Event)
 	eNew := objNew.(*v1.Event)
-	prometheusEvent(eNew)
+	prometheusEvent(eNew, false)
 	er.eSink.UpdateEvents(eNew, eOld)
 }
 
 // prometheusEvent is called when an event is added or updated
-func prometheusEvent(event *v1.Event) {
+func prometheusEvent(event *v1.Event, shouldDel bool) {
 	if !viper.GetBool("enable-prometheus") {
 		return
 	}
-	var counter prometheus.Counter
+
+	var gauge prometheus.Gauge
 	var err error
 
+	if shouldDel {
+		delok := kubernetesWarningEventGaugeVec.DeleteLabelValues(
+			event.InvolvedObject.Kind,
+			event.InvolvedObject.Name,
+			event.InvolvedObject.Namespace,
+			event.Reason,
+			event.Source.Host,
+		)
+		klog.Errorf("del event: %t", delok)
+		return
+	}
 	switch event.Type {
 	case "Normal":
-		counter, err = kubernetesNormalEventCounterVec.GetMetricWithLabelValues(
+		gauge, err = kubernetesNormalEventGaugeVec.GetMetricWithLabelValues(
 			event.InvolvedObject.Kind,
 			event.InvolvedObject.Name,
 			event.InvolvedObject.Namespace,
@@ -163,7 +178,7 @@ func prometheusEvent(event *v1.Event) {
 			event.Source.Host,
 		)
 	case "Warning":
-		counter, err = kubernetesWarningEventCounterVec.GetMetricWithLabelValues(
+		gauge, err = kubernetesWarningEventGaugeVec.GetMetricWithLabelValues(
 			event.InvolvedObject.Kind,
 			event.InvolvedObject.Name,
 			event.InvolvedObject.Namespace,
@@ -171,7 +186,7 @@ func prometheusEvent(event *v1.Event) {
 			event.Source.Host,
 		)
 	case "Info":
-		counter, err = kubernetesInfoEventCounterVec.GetMetricWithLabelValues(
+		gauge, err = kubernetesInfoEventGaugeVec.GetMetricWithLabelValues(
 			event.InvolvedObject.Kind,
 			event.InvolvedObject.Name,
 			event.InvolvedObject.Namespace,
@@ -179,7 +194,7 @@ func prometheusEvent(event *v1.Event) {
 			event.Source.Host,
 		)
 	default:
-		counter, err = kubernetesUnknownEventCounterVec.GetMetricWithLabelValues(
+		gauge, err = kubernetesUnknownEventGaugeVec.GetMetricWithLabelValues(
 			event.InvolvedObject.Kind,
 			event.InvolvedObject.Name,
 			event.InvolvedObject.Namespace,
@@ -192,13 +207,14 @@ func prometheusEvent(event *v1.Event) {
 		// Not sure this is the right place to log this error?
 		glog.Warning(err)
 	} else {
-		counter.Add(1)
+		gauge.Inc()
 	}
 }
 
 // deleteEvent should only occur when the system garbage collects events via TTL expiration
 func (er *EventRouter) deleteEvent(obj interface{}) {
 	e := obj.(*v1.Event)
+	prometheusEvent(e, true)
 	// NOTE: This should *only* happen on TTL expiration there
 	// is no reason to push this to a sink
 	glog.V(5).Infof("Event Deleted from the system:\n%v", e)
