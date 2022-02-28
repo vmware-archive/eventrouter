@@ -17,11 +17,44 @@ limitations under the License.
 package sinks
 
 import (
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/json"
+
 	"github.com/Shopify/sarama"
 	"github.com/golang/glog"
-	"k8s.io/api/core/v1"
+	"github.com/xdg/scram"
+	v1 "k8s.io/api/core/v1"
 )
+
+var (
+	SHA256 scram.HashGeneratorFcn = sha256.New
+	SHA512 scram.HashGeneratorFcn = sha512.New
+)
+
+type XDGSCRAMClient struct {
+	*scram.Client
+	*scram.ClientConversation
+	scram.HashGeneratorFcn
+}
+
+func (x *XDGSCRAMClient) Begin(userName, password, authzID string) (err error) {
+	x.Client, err = x.HashGeneratorFcn.NewClient(userName, password, authzID)
+	if err != nil {
+		return err
+	}
+	x.ClientConversation = x.Client.NewConversation()
+	return nil
+}
+
+func (x *XDGSCRAMClient) Step(challenge string) (response string, err error) {
+	response, err = x.ClientConversation.Step(challenge)
+	return
+}
+
+func (x *XDGSCRAMClient) Done() bool {
+	return x.ClientConversation.Done()
+}
 
 // KafkaSink implements the EventSinkInterface
 type KafkaSink struct {
@@ -30,9 +63,9 @@ type KafkaSink struct {
 }
 
 // NewKafkaSinkSink will create a new KafkaSink with default options, returned as an EventSinkInterface
-func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, saslUser string, saslPwd string) (EventSinkInterface, error) {
+func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, saslUser string, saslPwd string, saslMechanism string) (EventSinkInterface, error) {
 
-	p, err := sinkFactory(brokers, async, retryMax, saslUser, saslPwd)
+	p, err := sinkFactory(brokers, async, retryMax, saslUser, saslPwd, saslMechanism)
 
 	if err != nil {
 		return nil, err
@@ -44,7 +77,7 @@ func NewKafkaSink(brokers []string, topic string, async bool, retryMax int, sasl
 	}, err
 }
 
-func sinkFactory(brokers []string, async bool, retryMax int, saslUser string, saslPwd string) (interface{}, error) {
+func sinkFactory(brokers []string, async bool, retryMax int, saslUser string, saslPwd string, saslMechanism string) (interface{}, error) {
 	config := sarama.NewConfig()
 	config.Producer.Retry.Max = retryMax
 	config.Producer.RequiredAcks = sarama.WaitForAll
@@ -53,6 +86,14 @@ func sinkFactory(brokers []string, async bool, retryMax int, saslUser string, sa
 		config.Net.SASL.Enable = true
 		config.Net.SASL.User = saslUser
 		config.Net.SASL.Password = saslPwd
+
+		if saslMechanism == "sha256" {
+			config.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: SHA256} }
+			config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
+		} else if saslMechanism == "sha512" {
+			config.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: SHA512} }
+			config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
+		}
 	}
 
 	if async {
