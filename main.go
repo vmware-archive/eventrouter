@@ -31,6 +31,7 @@ import (
 
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // enables using kubeconfig for GCP auth
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
