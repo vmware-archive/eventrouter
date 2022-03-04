@@ -17,6 +17,7 @@ limitations under the License.
 package sinks
 
 import (
+	"context"
 	"errors"
 
 	"github.com/golang/glog"
@@ -217,6 +218,27 @@ func ManufactureSink() (e EventSinkInterface) {
 		}
 		go eh.Run(make(chan bool))
 		return eh
+	case "pubsub":
+		projectID := viper.GetString("pubSubProjectID")
+		if projectID == "" {
+			panic("pubsub sink specified but pubSubProjectID not specified")
+		}
+		topic := viper.GetString("pubSubTopic")
+		if topic == "" {
+			panic("pubsub sink specified but pubSubTopic not specified")
+		}
+		deadLetterTopic := viper.GetString("pubSubDeadLetterTopic")
+		var pubSubSink *PubSubSink
+		var err error
+		if deadLetterTopic == "" {
+			pubSubSink, err = NewPubSubSink(context.TODO(), projectID, topic)
+		} else {
+			pubSubSink, err = NewPubSubSinkWithDeadLetter(context.TODO(), projectID, topic, deadLetterTopic)
+		}
+		if err != nil {
+			panic(err.Error())
+		}
+		return pubSubSink
 	// case "logfile"
 	default:
 		err := errors.New("Invalid Sink Specified")
